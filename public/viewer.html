@@ -1,0 +1,133 @@
+viewer.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Data Viewer</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Real-time Data Viewer</h1>
+      <span class="badge">LIVE</span>
+    </div>
+    
+    <div class="value-container">
+      <h2 class="key-title">Key: <span id="key-display">Loading...</span></h2>
+      <div>Current Value:</div>
+      <div class="value" id="value">Loading...</div>
+    </div>
+    
+    <div class="status" id="status">Connecting to server...</div>
+    
+    <div class="update-history">
+      <h3>Update History</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Extract key from URL
+    const locationPath = window.location.pathname.split("/");
+    const key = locationPath[locationPath.length - 1];
+    document.getElementById('key-display').textContent = key;
+    document.title = `Data Viewer - ${key}`;
+    
+    // Connect to Socket.IO
+    const socket = io();
+    const statusElement = document.getElementById('status');
+    const valueElement = document.getElementById('value');
+    const historyList = document.getElementById('history-list');
+    let updateHistory = [];
+    
+    // Initial data fetch
+    async function fetchInitialValue() {
+      try {
+        const response = await fetch(`/get/${key}`);
+        
+        if (response.ok) {
+          const data = await response.text();
+          updateValue(data, new Date());
+        } else if (response.status === 404) {
+          valueElement.innerText = "No value found";
+        } else {
+          valueElement.innerText = "Error fetching value";
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial value:', error);
+        valueElement.innerText = "Connection error";
+        statusElement.textContent = 'Failed to connect to server';
+        statusElement.style.backgroundColor = '#ffebee';
+        statusElement.style.color = '#c62828';
+      }
+    }
+    
+    // Update value and history
+    function updateValue(value, timestamp) {
+      valueElement.innerText = value;
+      valueElement.classList.add('blink');
+      
+      setTimeout(() => {
+        valueElement.classList.remove('blink');
+      }, 1000);
+      
+      // Add to history
+      updateHistory.unshift({ value, timestamp });
+      if (updateHistory.length > 10) {
+        updateHistory.pop();
+      }
+      
+      // Update history display
+      renderHistory();
+    }
+    
+    function renderHistory() {
+      historyList.innerHTML = '';
+      
+      updateHistory.forEach(item => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        
+        const valueSpan = document.createElement('span');
+        valueSpan.textContent = item.value;
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'timestamp';
+        timeSpan.textContent = item.timestamp.toLocaleTimeString();
+        
+        historyItem.appendChild(valueSpan);
+        historyItem.appendChild(timeSpan);
+        historyList.appendChild(historyItem);
+      });
+    }
+    
+    // Socket.IO event handlers
+    socket.on('connect', () => {
+      statusElement.textContent = 'Connected to server! Waiting for updates...';
+      statusElement.style.backgroundColor = '#e8f5e9';
+      statusElement.style.color = '#2e7d32';
+      
+      // Subscribe to updates for this key
+      socket.emit('subscribe', key);
+    });
+    
+    socket.on('disconnect', () => {
+      statusElement.textContent = 'Disconnected from server. Reconnecting...';
+      statusElement.style.backgroundColor = '#ffebee';
+      statusElement.style.color = '#c62828';
+    });
+    
+    socket.on('valueUpdate', (data) => {
+      if (data.key === key) {
+        updateValue(data.value, new Date());
+      }
+    });
+    
+    // Start the app
+    fetchInitialValue();
+  </script>
+</body>
+</html>

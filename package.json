@@ -1,0 +1,41 @@
+{
+  "name": "cs4",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-db": "node db/init.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "kafka:up": "docker-compose up -d",
+    "kafka:down": "docker-compose down",
+    "kafka:status": "docker-compose ps",
+    "kafka:logs": "docker-compose logs -f",
+    "setup": "npm install && npm run kafka:up && npm run create-postgres-db && npm run init-db",
+    "create-topic": "node -e \"require('./config/kafka').createTestTopic()\"",
+    "create-postgres-db": "node -e \"require('./db/create-postgres-db').createDatabase()\""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "kafkajs": "^2.2.4",
+    "node-cache": "^5.1.2",
+    "node-cron": "^3.0.3",
+    "path": "^0.12.7",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4",
+    "redis": "^4.7.0",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
