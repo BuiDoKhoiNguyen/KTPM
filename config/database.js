@@ -1,7 +1,5 @@
 const { Sequelize } = require('sequelize');
-const path = require('path');
 
-// Kết nối PostgreSQL với Sequelize
 const sequelize = new Sequelize({
   dialect: 'postgres',
   host: process.env.DB_HOST || 'localhost',

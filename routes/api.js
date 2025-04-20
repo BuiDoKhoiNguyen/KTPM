@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const { writeData, readData, getDataHistory } = require('../services/dataService');
+const { writeData, readData, getDataHistory, getAllKeys } = require('../services/dataService');
 
-// POST /add - Thêm/chỉnh sửa giá trị
 router.post('/add', async (req, res) => {
   try {
     const { key, value } = req.body;
@@ -12,7 +11,6 @@ router.post('/add', async (req, res) => {
       return res.status(400).json({ error: 'Key and value are required' });
     }
     
-    // Bỏ userId vì đã loại bỏ authentication
     await writeData(key, value, null);
     res.status(200).json({ success: true, message: 'Value stored successfully' });
   } catch (error) {
@@ -21,7 +19,6 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// GET /get/:key - Trả về giá trị của key
 router.get('/get/:key', async (req, res) => {
   try {
     const key = req.params.key;
@@ -38,7 +35,6 @@ router.get('/get/:key', async (req, res) => {
   }
 });
 
-// GET /history/:key - Trả về lịch sử thay đổi của key
 router.get('/history/:key', async (req, res) => {
   try {
     const key = req.params.key;
@@ -56,14 +52,25 @@ router.get('/history/:key', async (req, res) => {
   }
 });
 
-// GET /viewer/:key - Trang web theo dõi giá trị của key
 router.get('/viewer/:key', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/viewer.html'));
 });
 
-// Health check
-router.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+router.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+router.get('/keys', async (req, res) => {
+  try {
+    const keys = await getAllKeys();
+    res.status(200).json({
+      success: true,
+      data: keys
+    });
+  } catch (error) {
+    console.error('Error in /keys endpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

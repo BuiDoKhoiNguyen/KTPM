@@ -23,7 +23,6 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM('CREATE', 'UPDATE', 'DELETE'),
       allowNull: false
     },
-    // Đã loại bỏ trường userId có tham chiếu đến bảng users
     timestamp: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

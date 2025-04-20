@@ -4,16 +4,16 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const bodyParser = require('body-parser');
-const socketio = require('socket.io');
+const socketio = require('socket.io')
 
 // Import configs & services
 const db = require('./config/database');
-const socketService = require('./services/socketService');
 const apiRoutes = require('./routes/api');
-const { connectKafka } = require('./services/pubsub');
+const kafkaService = require('./services/kafkaService');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./db/init');
-const { initializeModels } = require('./models');
+const { redis } = require('./config/redis');
+const socketService = require('./services/socketService');
 
 // App setup
 const app = express();
@@ -24,43 +24,44 @@ const io = socketio(server);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Khởi động server chỉ sau khi đã khởi tạo database thành công
 async function startServer() {
   try {
-    // Kết nối database
     await db.authenticate();
     console.log('Database connected');
 
-    // Khởi tạo database và các bảng
     await initializeDatabase();
     
-    // Initialize Socket.IO
     socketService.init(io);
 
-    // Initialize Kafka
-    await connectKafka().catch(err => {
+    await kafkaService.connect().catch(err => {
       console.error('Failed to connect to Kafka:', err);
-      // Không exit process, chỉ log lỗi
       console.error('Continuing without Kafka...');
     });
 
     // Routes
     app.use('/', apiRoutes);
     
-    // Error handling middleware (đặt sau routes)
     app.use(notFoundHandler);
     app.use(errorHandler);
 
     // Start server
     const PORT = process.env.PORT || 8080;
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Server running on http://localhost:${PORT}/admin`);
     });
   } catch (error) {
-    console.error('Không thể khởi động server:', error);
+    console.error('Can not start server ', error);
     process.exit(1);
   }
 }
 
-// Khởi động server
-startServer();
+redis.on('ready', () => {
+  console.log('Redis cache is ready, starting server...');
+  startServer();
+});
+
+redis.on('error', (err) => {
+  console.error('Redis connection error:', err);
+  console.log('Starting server without Redis cache...');
+  startServer();
+});

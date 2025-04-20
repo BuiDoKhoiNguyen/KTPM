@@ -6,12 +6,9 @@ function init(socketio) {
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
     
-    // Client subscribes to updates cho một key cụ thể
     socket.on('subscribe', (keyId) => {
       console.log(`Client ${socket.id} subscribed to ${keyId}`);
       socket.join(keyId);
-      
-      // Gửi xác nhận subscription
       socket.emit('subscribed', { status: 'success', key: keyId });
     });
     
@@ -23,8 +20,11 @@ function init(socketio) {
   return io;
 }
 
+// Emit data update for all clients subscribing to the keyId
 function emitUpdate(keyId, value) {
   if (!io) throw new Error('Socket.IO not initialized');
+  
+  console.log(`Emitting update for key ${keyId} with value ${value}`);
   
   io.to(keyId).emit('valueUpdate', {
     key: keyId,
@@ -38,14 +38,12 @@ function emitUpdate(keyId, value) {
 function broadcastUpdate(data) {
   if (!io) throw new Error('Socket.IO not initialized');
   
-  // Phát sóng đến tất cả các clients
   io.emit('update', {
     data,
     timestamp: Date.now()
   });
-  
-  // Nếu data có key, cũng phát đến room cụ thể
-  if (data.key) {
+
+  if (data.key && data.value !== undefined) {
     emitUpdate(data.key, data.value);
   }
   
@@ -54,6 +52,6 @@ function broadcastUpdate(data) {
 
 module.exports = {
   init,
-  emitUpdate,
+  emitUpdate,  
   broadcastUpdate
 };

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key Management Dashboard</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --danger-color: #e74c3c;
+      --warning-color: #f39c12;
+      --background-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #333;
+      --border-radius: 12px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      transition: var(--transition);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 30px auto;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+      background-color: var(--card-bg);
+      transition: var(--transition);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary-color), #34495e);
+      color: white;
+      padding: 25px 30px;
+      text-align: center;
+      position: relative;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .dashboard-summary {
+      display: flex;
+      justify-content: space-around;
+      padding: 20px;
+      background-color: rgba(52, 152, 219, 0.05);
+      border-bottom: 1px solid #eee;
+    }
+
+    .summary-card {
+      text-align: center;
+      padding: 15px;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      flex: 1;
+      margin: 0 10px;
+    }
+
+    .summary-card h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .summary-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: row;
+    }
+
+    .form-group label {
+      display: flex;
+      width: 100px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn {
+      cursor: pointer;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-success {
+      background-color: var(--secondary-color);
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    /* Table Styles */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th, .table td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .table th {
+      background-color: rgba(52, 152, 219, 0.05);
+      color: #555;
+      font-weight: 500;
+    }
+
+    .table tbody tr {
+      transition: var(--transition);
+    }
+
+    .table tbody tr:hover {
+      background-color: rgba(52, 152, 219, 0.03);
+    }
+
+    .key-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      cursor: pointer;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .view-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .edit-btn {
+      background-color: var(--warning-color);
+      color: white;
+    }
+
+    .delete-btn {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      padding: 25px;
+      width: 90%;
+      max-width: 700px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--primary-color);
+      margin: 0;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #999;
+      transition: var(--transition);
+    }
+
+    .close-btn:hover {
+      color: var(--danger-color);
+    }
+
+    .modal-footer {
+      margin-top: 25px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Alert Styles */
+    .alert {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.5s;
+    }
+
+    .alert-success {
+      background-color: rgba(46, 204, 113, 0.1);
+      border: 1px solid rgba(46, 204, 113, 0.3);
+      color: var(--secondary-color);
+    }
+
+    .alert-error {
+      background-color: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      color: var(--danger-color);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Status indicator */
+    .status-indicator {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-block;
+    }
+
+    .status-active {
+      background-color: rgba(46, 204, 113, 0.1);
+      color: var(--secondary-color);
+    }
+
+    /* Loader */
+    .loader {
+      display: inline-block;
+      width: 25px;
+      height: 25px;
+      border: 3px solid rgba(52, 152, 219, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Dark mode */
+    .dark-mode {
+      --background-color: #1a1a2e;
+      --card-bg: #16213e;
+      --text-color: #e6e6e6;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+
+      .dashboard-summary {
+        flex-direction: column;
+      }
+
+      .summary-card {
+        margin: 5px 0;
+      }
+
+      .table th, .table td {
+        padding: 10px;
+      }
+    }
+
+    .refresh-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .refresh-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+      transform: rotate(180deg);
+    }
+
+    .refresh-icon {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Key Management Dashboard</h1>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh data">
+        <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4.01 7.58 4.01 12C4.01 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="dashboard-summary">
+      <div class="summary-card">
+        <h3>Total Keys</h3>
+        <div id="totalKeys" class="value">--</div>
+      </div>
+      <div class="summary-card">
+        <h3>Last Updated</h3>
+        <div id="lastUpdated" class="value">--</div>
+      </div>
+      <div class="summary-card">
+        <h3>Status</h3>
+        <div id="connectionStatus" class="value">
+          <span class="status-indicator status-active">Connecting...</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <div id="alertContainer"></div>
+      
+      <div class="section">
+        <h2 class="section-title">Add New Key</h2>
+        <form id="addKeyForm">
+          <div class="form-group">
+            <label for="keyName">Key Name</label>
+            <input type="text" id="keyName" class="form-control" placeholder="Enter key name">
+          </div>
+          <div class="form-group">
+            <label for="keyValue">Key Value</label>
+            <textarea id="keyValue" class="form-control" rows="3" placeholder="Enter key value"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Key</button>
+        </form>
+      </div>
+      
+      <div class="section">
+        <h2 class="section-title">All Keys</h2>
+        <div class="table-container">
+          <table class="table" id="keysTable">
+            <thead>
+              <tr>
+                <th>Key Name</th>
+                <th>Current Value</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="keysTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center;">Loading keys...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Edit Key Modal -->
+  <div class="modal-overlay" id="editKeyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Key</h3>
+        <button class="close-btn" id="closeEditModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editKeyForm">
+          <input type="hidden" id="editKeyId">
+          <div class="form-group">
+            <label for="editKeyName">Key Name</label>
+            <input type="text" id="editKeyName" class="form-control" readonly>
+          </div>
+          <div class="form-group">
+            <label for="editKeyValue">Key Value</label>
+            <textarea id="editKeyValue" class="form-control" rows="5"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="cancelEditBtn">Cancel</button>
+        <button class="btn btn-success" id="saveKeyBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const totalKeysEl = document.getElementById('totalKeys');
+    const lastUpdatedEl = document.getElementById('lastUpdated');
+    const connectionStatusEl = document.getElementById('connectionStatus');
+    const keysTableBody = document.getElementById('keysTableBody');
+    const addKeyForm = document.getElementById('addKeyForm');
+    const keyNameInput = document.getElementById('keyName');
+    const keyValueInput = document.getElementById('keyValue');
+    const alertContainer = document.getElementById('alertContainer');
+    const editKeyModal = document.getElementById('editKeyModal');
+    const editKeyForm = document.getElementById('editKeyForm');
+    const editKeyIdInput = document.getElementById('editKeyId');
+    const editKeyNameInput = document.getElementById('editKeyName');
+    const editKeyValueInput = document.getElementById('editKeyValue');
+    const closeEditModalBtn = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    
+    // State
+    let keysData = [];
+    let isLoading = false;  // Flag để kiểm soát các request đồng thời
+    let lastUpdate = null;
+    
+    // Connect to Socket.IO
+    const socket = io();
+    
+    // Socket.IO event handlers
+    socket.on('connect', () => {
+      updateConnectionStatus('Connected', true);
+    });
+    
+    socket.on('disconnect', () => {
+      updateConnectionStatus('Disconnected', false);
+    });
+    
+    socket.on('update', (data) => {
+      // Update là một key mới hoặc thay đổi từ kafka
+      showAlert(`Key '${data.data.key}' has been updated`, 'success');
+      
+      // Đợi một chút trước khi refresh để tránh nhiều request đồng thời
+      setTimeout(() => {
+        fetchAllKeys();
+      }, 500);
+    });
+    
+    // Fetch all keys on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchAllKeys();
+    });
+    
+    // Fetch all keys
+    async function fetchAllKeys() {
+      // Nếu đang tải, không thực hiện request mới
+      if (isLoading) return;
+      
+      isLoading = true;
+      try {
+        const response = await fetch('/keys');
+        if (!response.ok) {
+          throw new Error('Failed to fetch keys');
+        }
+        
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          // Update state
+          keysData = data.data;
+          
+          // Update UI
+          totalKeysEl.textContent = keysData.length;
+          lastUpdate = new Date();
+          lastUpdatedEl.textContent = lastUpdate.toLocaleTimeString();
+          
+          // Render keys table
+          renderKeysTable(keysData);
+        }
+      } catch (error) {
+        console.error('Error fetching keys:', error);
+        showAlert('Failed to fetch keys. Please try again later.', 'error');
+      } finally {
+        // Đánh dấu là đã hoàn thành tải
+        isLoading = false;
+      }
+    }
+    
+    // Render keys table
+    function renderKeysTable(keys) {
+      if (!keys || keys.length === 0) {
+        keysTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center;">No keys found</td>
+          </tr>
+        `;
+        return;
+      }
+      
+      // Xóa bảng trước khi thêm mới
+      keysTableBody.innerHTML = '';
+      
+      // Hiển thị loader trong lúc đang tải
+      const loaderRow = document.createElement('tr');
+      loaderRow.innerHTML = `
+        <td colspan="4" style="text-align: center;">
+          <div class="loader"></div> Loading key values...
+        </td>
+      `;
+      keysTableBody.appendChild(loaderRow);
+      
+      // Thêm đảm bảo tính duy nhất của keys
+      const uniqueKeys = [...new Set(keys)];
+      
+      // Fetch values for each key
+      const fetchValuePromises = uniqueKeys.map(key => fetchKeyValue(key));
+      
+      Promise.all(fetchValuePromises)
+        .then(keyDataArray => {
+          // Xóa loader
+          keysTableBody.innerHTML = '';
+          
+          // Tạo một bản đồ để lưu trữ keys đã xử lý
+          const processedKeys = new Map();
+          
+          keyDataArray.forEach(keyData => {
+            // Kiểm tra nếu key đã được xử lý
+            if (processedKeys.has(keyData.key)) return;
+            
+            // Đánh dấu key đã được xử lý
+            processedKeys.set(keyData.key, true);
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${keyData.key}</td>
+              <td>${keyData.value || 'N/A'}</td>
+              <td>${keyData.lastUpdated || 'N/A'}</td>
+              <td class="key-actions">
+                <button class="action-btn view-btn" data-key="${keyData.key}">View</button>
+                <button class="action-btn edit-btn" data-key="${keyData.key}">Edit</button>
+              </td>
+            `;
+            keysTableBody.appendChild(row);
+          });
+          
+          // Add event listeners to action buttons
+          addActionButtonListeners();
+        })
+        .catch(error => {
+          console.error('Error rendering keys table:', error);
+          showAlert('Failed to load key values. Please try again later.', 'error');
+        });
+    }
+    
+    // Fetch value for a specific key
+    async function fetchKeyValue(key) {
+      try {
+        const response = await fetch(`/get/${key}`);
+        if (!response.ok) {
+          return { key, value: 'Error fetching value', lastUpdated: 'N/A' };
+        }
+        
+        const value = await response.text();
+        
+        // Fetch history to get last updated time
+        const historyResponse = await fetch(`/history/${key}?limit=1`);
+        const historyData = await historyResponse.json();
+        
+        const lastUpdated = historyData.data && historyData.data.length > 0 
+          ? new Date(historyData.data[0].timestamp).toLocaleString() 
+          : 'N/A';
+        
+        return { key, value, lastUpdated };
+      } catch (error) {
+        console.error(`Error fetching value for key ${key}:`, error);
+        return { key, value: 'Error fetching value', lastUpdated: 'N/A' };
+      }
+    }
+    
+    // Add event listeners to action buttons
+    function addActionButtonListeners() {
+      // View button
+      document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const key = button.getAttribute('data-key');
+          window.open(`/viewer/${key}`, '_blank');
+        });
+      });
+      
+      // Edit button
+      document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+          const key = button.getAttribute('data-key');
+          await openEditModal(key);
+        });
+      });
+    }
+    
+    // Open edit modal
+    async function openEditModal(key) {
+      try {
+        // Fetch the current value
+        const response = await fetch(`/get/${key}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch key value');
+        }
+        
+        const value = await response.text();
+        
+        // Fill the form
+        editKeyIdInput.value = key;
+        editKeyNameInput.value = key;
+        editKeyValueInput.value = value;
+        
+        // Show the modal
+        editKeyModal.classList.add('active');
+      } catch (error) {
+        console.error('Error opening edit modal:', error);
+        showAlert('Failed to load key value for editing.', 'error');
+      }
+    }
+    
+    // Close edit modal
+    function closeEditModal() {
+      editKeyModal.classList.remove('active');
+    }
+    
+    // Add Key form submission
+    addKeyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const key = keyNameInput.value.trim();
+      const value = keyValueInput.value.trim();
+      
+      if (!key || !value) {
+        showAlert('Please enter both key name and value.', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ key, value })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to add key');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showAlert(`Key '${key}' added successfully!`, 'success');
+          keyNameInput.value = '';
+          keyValueInput.value = '';
+          fetchAllKeys(); // Refresh the data
+        } else {
+          showAlert('Failed to add key. Please try again.', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding key:', error);
+        showAlert('Failed to add key. Please try again later.', 'error');
+      }
+    });
+    
+    // Save Key button click
+    saveKeyBtn.addEventListener('click', async () => {
+      const key = editKeyIdInput.value;
+      const value = editKeyValueInput.value.trim();
+      
+      if (!value) {
+        showAlert('Please enter a value.', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ key, value })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update key');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          closeEditModal();
+          showAlert(`Key '${key}' updated successfully!`, 'success');
+          fetchAllKeys(); // Refresh the data
+        } else {
+          showAlert('Failed to update key. Please try again.', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating key:', error);
+        showAlert('Failed to update key. Please try again later.', 'error');
+      }
+    });
+    
+    // Refresh button click
+    refreshBtn.addEventListener('click', () => {
+      fetchAllKeys();
+      showAlert('Data refreshed!', 'success');
+    });
+    
+    // Close modal event listeners
+    closeEditModalBtn.addEventListener('click', closeEditModal);
+    cancelEditBtn.addEventListener('click', closeEditModal);
+    
+    // Click outside modal to close
+    editKeyModal.addEventListener('click', (e) => {
+      if (e.target === editKeyModal) {
+        closeEditModal();
+      }
+    });
+    
+    // Update connection status
+    function updateConnectionStatus(status, isConnected) {
+      connectionStatusEl.innerHTML = `
+        <span class="status-indicator ${isConnected ? 'status-active' : ''}">${status}</span>
+      `;
+    }
+    
+    // Show alert message
+    function showAlert(message, type = 'success') {
+      const alertEl = document.createElement('div');
+      alertEl.className = `alert alert-${type}`;
+      alertEl.textContent = message;
+      
+      alertContainer.appendChild(alertEl);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        alertEl.style.opacity = '0';
+        alertEl.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+          alertContainer.removeChild(alertEl);
+        }, 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

@@ -1,8 +1,3 @@
-/**
- * Middleware xử lý lỗi tập trung cho ứng dụng
- */
-
-// Middleware xử lý lỗi tập trung
 const errorHandler = (err, req, res, next) => {
   console.error('Error:', err.message, err.stack);
   
@@ -17,7 +12,6 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-// Middleware bắt lỗi 404 (Không tìm thấy tài nguyên)
 const notFoundHandler = (req, res, next) => {
   const error = new Error(`Không tìm thấy: ${req.originalUrl}`);
   error.statusCode = 404;
