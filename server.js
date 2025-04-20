@@ -1,66 +1,40 @@
-// Imports
-require('dotenv').config(); // Thêm để sử dụng biến môi trường từ file .env
 const express = require('express');
-const http = require('http');
-const path = require('path');
 const bodyParser = require('body-parser');
-const socketio = require('socket.io');
+const path = require('path');
 
-// Import configs & services
-const db = require('./config/database');
-const socketService = require('./services/socketService');
-const apiRoutes = require('./routes/api');
-const { connectKafka } = require('./services/pubsub');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { initializeDatabase } = require('./db/init');
-const { initializeModels } = require('./models');
+const lib = require('./utils');
 
-// App setup
 const app = express();
-const server = http.createServer(app);
-const io = socketio(server);
+const port = 8888;
 
-// Middleware
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Khởi động server chỉ sau khi đã khởi tạo database thành công
-async function startServer() {
-  try {
-    // Kết nối database
-    await db.authenticate();
-    console.log('Database connected');
+app.post('/add', async (req, res) => {
+    try {
+        const { key, value } = req.body;
+        await lib.write(key, value);
+        res.send("Insert a new record successfully!");
+    } catch (err) {
+        res.send(err.toString());
+    }
+});
 
-    // Khởi tạo database và các bảng
-    await initializeDatabase();
-    
-    // Initialize Socket.IO
-    socketService.init(io);
+app.get('/get/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const value = await lib.view(id);
+        res.status(200).send(value);
+    } catch (err) {
+        res.send(err)
+    }
+});
 
-    // Initialize Kafka
-    await connectKafka().catch(err => {
-      console.error('Failed to connect to Kafka:', err);
-      // Không exit process, chỉ log lỗi
-      console.error('Continuing without Kafka...');
-    });
 
-    // Routes
-    app.use('/', apiRoutes);
-    
-    // Error handling middleware (đặt sau routes)
-    app.use(notFoundHandler);
-    app.use(errorHandler);
+app.get('/viewer/:id', (req, res) => {
+    const id = req.params.id;
+    res.sendFile(path.join(__dirname, "viewer.html"));
+});
 
-    // Start server
-    const PORT = process.env.PORT || 8080;
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Không thể khởi động server:', error);
-    process.exit(1);
-  }
-}
-
-// Khởi động server
-startServer();
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
