@@ -15,6 +15,8 @@ const { initializeDatabase } = require('./db/init');
 const { redis } = require('./config/redis');
 const socketService = require('./services/socketService');
 
+
+// cd /Users/buidokhoinguyen/Desktop/KTPM-btl && docker-compose down && docker-compose build app && docker-compose up -d
 // App setup
 const app = express();
 const server = http.createServer(app);

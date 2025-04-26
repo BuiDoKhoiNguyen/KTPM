@@ -67,22 +67,27 @@ REDIS_TTL=600
 
 ### 1. Data Flow
 ```
-[Client] <--Socket.IO--> [Server]
-    |                         |
-    |                         v
-    |                   [Kafka Producer]
-    |                         |
-    |                         v
-    |                    [Kafka Broker]
-    |                         |
-    |                         v
-    |                   [Kafka Consumer]
-    |                         |
-    |                         v
-[Socket.IO] <------------- [Server]
-    |                         |
-    v                         v
-[Browser]               [Redis Cache] <--> [PostgreSQL]
+[Client] <--Socket.IO--> [Server/API Layer]
+    |                           |
+    |                           v
+    |                    [Data Service]
+    |                           |
+    |                 +---------+---------+
+    |                 |                   |
+    |                 v                   v
+    |          [Kafka Producer]     [Redis Cache] <--> [PostgreSQL]
+    |                 |                   ^
+    |                 v                   |
+    |           [Kafka Broker]            |
+    |                 |                   |
+    |                 v                   |
+    |          [Kafka Consumer]           |
+    |                 |                   |
+    v                 v                   |
+[Socket.IO] <------ [Server] -------------+
+    |
+    v
+[Browser]
 ```
 
 ### 2. Caching Strategy

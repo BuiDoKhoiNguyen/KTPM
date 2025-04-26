@@ -1,7 +1,20 @@
+const { createAdapter } = require('@socket.io/redis-adapter');
+const Redis = require('ioredis');
 let io;
 
 function init(socketio) {
   io = socketio;
+  
+  // Thiết lập Redis adapter cho Socket.IO
+  const pubClient = new Redis({
+    host: process.env.REDIS_HOST || 'redis',
+    port: process.env.REDIS_PORT || 6379
+  });
+  
+  const subClient = pubClient.duplicate();
+  
+  // Đăng ký Redis adapter
+  io.adapter(createAdapter(pubClient, subClient));
   
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);

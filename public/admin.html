@@ -340,7 +340,7 @@
 
     .status-active {
       background-color: rgba(46, 204, 113, 0.1);
-      color: var(--secondary-color);
+      color: var (--secondary-color);
     }
 
     /* Loader */
@@ -670,15 +670,13 @@
           return { key, value: 'Error fetching value', lastUpdated: 'N/A' };
         }
         
-        const value = await response.text();
+        const data = await response.json();
+        const value = data.value;
         
-        // Fetch history to get last updated time
-        const historyResponse = await fetch(`/history/${key}?limit=1`);
-        const historyData = await historyResponse.json();
-        
-        const lastUpdated = historyData.data && historyData.data.length > 0 
-          ? new Date(historyData.data[0].timestamp).toLocaleString() 
-          : 'N/A';
+        // Sử dụng updatedAt từ server nếu có
+        const lastUpdated = data.updatedAt 
+          ? new Date(data.updatedAt).toLocaleString()
+          : new Date().toLocaleString();
         
         return { key, value, lastUpdated };
       } catch (error) {
@@ -715,12 +713,12 @@
           throw new Error('Failed to fetch key value');
         }
         
-        const value = await response.text();
+        const data = await response.json();
         
         // Fill the form
         editKeyIdInput.value = key;
         editKeyNameInput.value = key;
-        editKeyValueInput.value = value;
+        editKeyValueInput.value = data.value;
         
         // Show the modal
         editKeyModal.classList.add('active');

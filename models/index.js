@@ -1,9 +1,7 @@
 const sequelize = require('../config/database');
 const defineDataModel = require('./data');
-const defineDataHistoryModel = require('./data-history');
 
 const Data = defineDataModel(sequelize);
-const DataHistory = defineDataHistoryModel(sequelize);
 
 const initializeModels = async () => {
   try {
@@ -18,6 +16,5 @@ const initializeModels = async () => {
 module.exports = {
   sequelize,
   Data,
-  DataHistory,
   initializeModels
 };

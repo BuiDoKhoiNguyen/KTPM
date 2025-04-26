@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const { writeData, readData, getDataHistory, getAllKeys } = require('../services/dataService');
+const { writeData, readData, getAllKeys } = require('../services/dataService');
 
 router.post('/add', async (req, res) => {
   try {
@@ -22,32 +22,15 @@ router.post('/add', async (req, res) => {
 router.get('/get/:key', async (req, res) => {
   try {
     const key = req.params.key;
-    const value = await readData(key);
+    const result = await readData(key);
     
-    if (value === null) {
+    if (result === null) {
       return res.status(404).json({ error: 'Key not found' });
     }
     
-    res.status(200).send(value);
+    res.status(200).json(result);
   } catch (error) {
     console.error('Error in /get endpoint:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/history/:key', async (req, res) => {
-  try {
-    const key = req.params.key;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-    
-    const history = await getDataHistory(key, limit);
-    
-    res.status(200).json({
-      success: true,
-      data: history
-    });
-  } catch (error) {
-    console.error('Error in /history endpoint:', error);
     res.status(500).json({ error: error.message });
   }
 });

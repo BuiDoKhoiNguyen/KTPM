@@ -1,6 +1,7 @@
 // services/pubsub/kafka.js
 const { Kafka } = require('kafkajs');
 const socketService = require('./socketService'); 
+const retry = require('../utils/retry');
 
 // Khởi tạo Kafka một lần duy nhất
 const kafka = new Kafka({
@@ -18,13 +19,34 @@ const consumer = kafka.consumer({ groupId: 'ktpm-consumer-group' });
 
 let isConnected = false;
 
-// Hàm kết nối Kafka
+// Hàm kết nối Kafka với retry
 async function connect() {
   if (isConnected) return;
   
   try {
-    await producer.connect();
-    await consumer.connect();
+    // Kết nối producer với retry pattern
+    await retry(async () => {
+      await producer.connect();
+      console.log('Kafka producer connected');
+    }, {
+      retries: 5,
+      delay: 1000,
+      onRetry: (error, attempt) => {
+        console.log(`Producer connection attempt ${attempt} failed: ${error.message}. Retrying...`);
+      }
+    });
+
+    // Kết nối consumer với retry pattern
+    await retry(async () => {
+      await consumer.connect();
+      console.log('Kafka consumer connected');
+    }, {
+      retries: 5,
+      delay: 1000,
+      onRetry: (error, attempt) => {
+        console.log(`Consumer connection attempt ${attempt} failed: ${error.message}. Retrying...`);
+      }
+    });
     
     const topicName = process.env.KAFKA_TOPIC || 'data-events';
     
@@ -33,6 +55,7 @@ async function connect() {
       topic: topicName, 
       fromBeginning: false 
     });
+    console.log(`Subscribed to topic ${topicName}`);
     
     // Khởi chạy consumer
     await consumer.run({
@@ -57,17 +80,23 @@ async function connect() {
   }
 }
 
+// Cập nhật function publishUpdate để sử dụng một topic chung
 async function publishUpdate(key, value) {
-  if (!producer.isConnected) {
-    await producer.connect();
-  }
-  
-  try {
-    const topic = `updates-${key}`;
+  return await retry(async () => {
+    if (!producer.isConnected) {
+      await producer.connect();
+    }
+    
+    // Sử dụng topic chung từ biến môi trường hoặc mặc định
+    const topic = process.env.KAFKA_TOPIC || 'data-events';
+    
     await producer.send({
       topic,
       messages: [
         { 
+          // Sử dụng key để đảm bảo tất cả messages của cùng một key 
+          // sẽ đi vào cùng một partition (duy trì thứ tự)
+          key: key,
           value: JSON.stringify({
             key,
             value,
@@ -77,12 +106,15 @@ async function publishUpdate(key, value) {
       ]
     });
     
-    console.log(`Published update for key ${key} to Kafka`);
+    console.log(`Published update for key "${key}" to Kafka topic "${topic}"`);
     return true;
-  } catch (error) {
-    console.error('Failed to publish update to Kafka:', error);
-    throw error;
-  }
+  }, {
+    retries: 3,
+    delay: 500,
+    onRetry: (error, attempt) => {
+      console.warn(`Retry #${attempt} publishing to Kafka: ${error.message}`);
+    }
+  });
 }
 
 // Export module

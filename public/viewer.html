@@ -230,7 +230,7 @@
     <div class="status" id="status">Connecting to server...</div>
     
     <div class="update-history">
-      <h3>Update History</h3>
+      <h3>Last Update</h3>
       <div id="history-list"></div>
     </div>
   </div>
@@ -255,8 +255,8 @@
         const response = await fetch(`/get/${key}`);
         
         if (response.ok) {
-          const data = await response.text();
-          updateValue(data, new Date());
+          const data = await response.json();
+          updateValue(data.value, new Date(data.updatedAt || Date.now()));
         } else if (response.status === 404) {
           valueElement.innerText = "No value found";
           valueElement.style.color = "#e74c3c";
