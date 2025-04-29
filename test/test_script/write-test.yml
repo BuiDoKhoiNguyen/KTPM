@@ -1,0 +1,32 @@
+config:
+  target: "http://localhost:8080"
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm up - Ghi dữ liệu"
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up - Ghi dữ liệu"
+    - duration: 120
+      arrivalRate: 20
+      name: "Sustained load - Ghi dữ liệu"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 300
+    max: 800
+
+scenarios:
+  - name: "Thêm/cập nhật giá trị key"
+    flow:
+      - post:
+          url: "/add"
+          json:
+            key: "perf-test-key-{{ $randomNumber(1, 1000) }}"
+            value: "perf-test-value-{{ $randomString(10) }}-{{ $timestamp }}"
+          expect:
+            - statusCode: 200

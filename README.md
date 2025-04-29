@@ -32,3 +32,7 @@ $ npm start
 
 Ngoài ra, các bạn có thể tuỳ chọn bổ sung thêm một số phần triển khai khác.
 
+_____________________________________________
+
+
+Thực hiện đo hiệu năng 
