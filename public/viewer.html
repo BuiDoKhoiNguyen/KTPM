@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Data Viewer</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --background-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #333;
+      --border-radius: 12px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      transition: var(--transition);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+      background-color: var(--card-bg);
+      margin: 20px;
+      transition: var(--transition);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary-color), #34495e);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: var(--secondary-color);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .value-container {
+      padding: 20px;
+      background-color: rgba(52, 152, 219, 0.05);
+      text-align: center;
+    }
+
+    .key-title {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 20px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #key-display {
+      color: var(--text-color);
+      font-weight: 700;
+      margin-left: 8px;
+      background-color: rgba(52, 152, 219, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-color);
+      padding: 20px;
+      margin: 15px auto;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      max-width: 80%;
+      word-break: break-all;
+      transition: var(--transition);
+    }
+
+    .status {
+      padding: 10px 20px;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .update-history {
+      padding: 20px;
+      background-color: var(--card-bg);
+    }
+
+    .update-history h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .history-item {
+      padding: 12px 15px;
+      background-color: rgba(52, 152, 219, 0.05);
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .history-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #666;
+      font-weight: 400;
+    }
+
+    .blink {
+      animation: highlightValue 1s;
+    }
+
+    @keyframes highlightValue {
+      0% {
+        background-color: rgba(46, 204, 113, 0.2);
+      }
+      100% {
+        background-color: var(--card-bg);
+      }
+    }
+
+    /* Responsive design */
+    @media (max-width: 600px) {
+      .container {
+        width: 95%;
+        margin: 10px;
+      }
+      
+      .value {
+        font-size: 24px;
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 22px;
+      }
+    }
+
+    /* Dark mode - can be activated with JavaScript */
+    .dark-mode {
+      --background-color: #1a1a2e;
+      --card-bg: #16213e;
+      --text-color: #e6e6e6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Real-time Data Viewer</h1>
+      <span class="badge">LIVE</span>
+    </div>
+    
+    <div class="value-container">
+      <h2 class="key-title">Key: <span id="key-display">Loading...</span></h2>
+      <div>Current Value:</div>
+      <div class="value" id="value">Loading...</div>
+    </div>
+    
+    <div class="status" id="status">Connecting to server...</div>
+    
+    <div class="update-history">
+      <h3>Last Update</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Extract key from URL
+    const locationPath = window.location.pathname.split("/");
+    const key = locationPath[locationPath.length - 1];
+    document.getElementById('key-display').textContent = key;
+    document.title = `Data Viewer - ${key}`;
+    
+    // Connect to Socket.IO
+    const socket = io();
+    const statusElement = document.getElementById('status');
+    const valueElement = document.getElementById('value');
+    const historyList = document.getElementById('history-list');
+    let updateHistory = [];
+    
+    // Initial data fetch
+    async function fetchInitialValue() {
+      try {
+        const response = await fetch(`/get/${key}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          updateValue(data.value, new Date(data.updatedAt || Date.now()));
+        } else if (response.status === 404) {
+          valueElement.innerText = "No value found";
+          valueElement.style.color = "#e74c3c";
+        } else {
+          valueElement.innerText = "Error fetching value";
+          valueElement.style.color = "#e74c3c";
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial value:', error);
+        valueElement.innerText = "Connection error";
+        valueElement.style.color = "#e74c3c";
+        statusElement.textContent = 'Failed to connect to server';
+        statusElement.style.backgroundColor = '#ffebee';
+        statusElement.style.color = '#c62828';
+      }
+    }
+    
+    // Update value and history
+    function updateValue(value, timestamp) {
+      valueElement.innerText = value;
+      valueElement.style.color = "var(--text-color)";
+      valueElement.classList.add('blink');
+      
+      setTimeout(() => {
+        valueElement.classList.remove('blink');
+      }, 1000);
+      
+      // Add to history
+      updateHistory.unshift({ value, timestamp });
+      if (updateHistory.length > 10) {
+        updateHistory.pop();
+      }
+      
+      // Update history display
+      renderHistory();
+    }
+    
+    function renderHistory() {
+      historyList.innerHTML = '';
+      
+      if (updateHistory.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.style.textAlign = 'center';
+        emptyMessage.style.padding = '20px';
+        emptyMessage.style.color = '#000';
+        emptyMessage.textContent = 'No updates yet';
+        historyList.appendChild(emptyMessage);
+        return;
+      }
+      
+      updateHistory.forEach((item, index) => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.style.opacity = 1 - (index * 0.08);
+        
+        const valueSpan = document.createElement('span');
+        valueSpan.textContent = item.value;
+        valueSpan.style.fontWeight = '500';
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'timestamp';
+        timeSpan.textContent = item.timestamp.toLocaleTimeString();
+        
+        historyItem.appendChild(valueSpan);
+        historyItem.appendChild(timeSpan);
+        historyList.appendChild(historyItem);
+      });
+    }
+    
+    // Socket.IO event handlers
+    socket.on('connect', () => {
+      statusElement.textContent = 'Connected to server! Waiting for updates...';
+      statusElement.style.backgroundColor = '#e8f5e9';
+      statusElement.style.color = '#2e7d32';
+      
+      // Subscribe to updates for this key
+      socket.emit('subscribe', key);
+    });
+    
+    socket.on('disconnect', () => {
+      statusElement.textContent = 'Disconnected from server. Reconnecting...';
+      statusElement.style.backgroundColor = '#ffebee';
+      statusElement.style.color = '#c62828';
+    });
+    
+    socket.on('valueUpdate', (data) => {
+      if (data.key === key) {
+        updateValue(data.value, new Date());
+      }
+    });
+    
+    // Toggle dark mode function (can be activated by button later)
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+    
+    // Detect system preference for dark mode
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      toggleDarkMode();
+    }
+    
+    // Start the app
+    fetchInitialValue();
+  </script>
+</body>
+</html>
