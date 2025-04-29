@@ -1,7 +1,18 @@
-Công cụ sử dụng: Apache Benchmark (ab), Socket.IO Testing Script, Redis Cache Testing Script, Long Polling Testing Script
-Kịch bản kiểm thử: Số lượng requests, concurrent users, và các kịch bản cụ thể
-Môi trường kiểm thử: Thông tin về hệ thống và môi trường
-Kết quả đánh giá hiệu năng:
+1. Phương pháp đánh giá
+1.1. Công cụ sử dụng
+Apache Benchmark (ab): Đo throughput và độ trễ của các API
+Socket.IO Testing Script: Đo độ trễ real-time của Socket.IO
+Redis Cache Testing Script: Đo hiệu quả của Redis Cache
+Long Polling Testing Script: Đo độ trễ real-time của long polling
+1.2. Kịch bản kiểm thử
+Đọc dữ liệu: 10,000 requests với 100 concurrent users
+Ghi dữ liệu: 1,000 requests với 10 concurrent users
+Độ trễ real-time (Socket.IO): 100 cập nhật liên tiếp
+Độ trễ real-time (Long Polling): 20 cập nhật liên tiếp
+Hiệu quả cache: So sánh 100 truy vấn cache miss và 100 truy vấn cache hit
+
+
+1.3.Kết quả đánh giá hiệu năng:
 Hiệu năng đọc dữ liệu: So sánh throughput và độ trễ
 Hiệu năng ghi dữ liệu: So sánh throughput và độ trễ
 Độ trễ real-time: So sánh long polling và Socket.IO
