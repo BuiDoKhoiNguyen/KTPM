@@ -1,0 +1,8 @@
+{
+  "totalTests": 20,
+  "averageLatency": 2155.3,
+  "medianLatency": 2145,
+  "minLatency": 2109,
+  "maxLatency": 2306,
+  "p95Latency": 2306
+}

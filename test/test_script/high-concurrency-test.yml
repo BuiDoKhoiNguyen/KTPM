@@ -1,0 +1,41 @@
+config:
+  target: "http://localhost:8080"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 500
+      name: "Ramp up to 500 concurrent users"
+    - duration: 120
+      arrivalRate: 500
+      name: "Sustained load with 500 concurrent users"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 500
+    max: 1000
+
+scenarios:
+  - name: "Đọc giá trị key"
+    weight: 7
+    flow:
+      - get:
+          url: "/get/test-key-{{ $randomNumber(1, 100) }}"
+          expect:
+            - statusCode: 200
+            
+  - name: "Thêm/cập nhật giá trị key"
+    weight: 3
+    flow:
+      - post:
+          url: "/add"
+          json:
+            key: "high-concurrency-key-{{ $randomNumber(1, 1000) }}"
+            value: "high-concurrency-value-{{ $randomString(10) }}-{{ $timestamp }}"
+          expect:
+            - statusCode: 200

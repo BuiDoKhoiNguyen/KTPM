@@ -1,0 +1,49 @@
+config:
+  target: "http://localhost:8080"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up - Mixed load"
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 30
+      name: "Ramp up - Mixed load"
+    - duration: 180
+      arrivalRate: 30
+      name: "Sustained load - Mixed load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 300
+    max: 1000
+
+scenarios:
+  - name: "Đọc giá trị key"
+    weight: 7
+    flow:
+      - get:
+          url: "/get/test-key-{{ $randomNumber(1, 100) }}"
+          expect:
+            - statusCode: 200
+            
+  - name: "Thêm/cập nhật giá trị key"
+    weight: 2
+    flow:
+      - post:
+          url: "/add"
+          json:
+            key: "mixed-test-key-{{ $randomNumber(1, 1000) }}"
+            value: "mixed-test-value-{{ $randomString(10) }}-{{ $timestamp }}"
+          expect:
+            - statusCode: 200
+            
+  - name: "Lấy danh sách keys"
+    weight: 1
+    flow:
+      - get:
+          url: "/keys"
+          expect:
+            - statusCode: 200
