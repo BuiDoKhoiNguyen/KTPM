@@ -1,37 +1,77 @@
-# CASE STUDY 4
-Dưới đây là một chương trình đơn giản sử dụng `express.js`, để ghi các giá trị vào database theo cặp key-value. Chương trình cung cấp một trang web liên tục cập nhật giá trị của key để gửi về kết quả mới, có thể được ứng dụng để cập nhật giá vàng, thông số theo *thời gian thực*. 
+# Key-Value Real-time System (KTPM-BTL)
 
-## Các công nghệ sử dụng
-- **Express.js**: Web framework
-- **Socket.IO**: Real-time communication 
-- **Kafka**: Message broker cho kiến trúc Publisher-Subscriber
-- **Redis**: In-memory cache để tối ưu hiệu năng truy vấn
-- **Sequelize**: ORM (Object-Relational Mapping) cho PostgreSQL
-- **Docker**: Containerization cho Kafka, Zookeeper, Postgres và Redis
+Hệ thống lưu trữ và cập nhật key-value thời gian thực, được thiết kế để hỗ trợ dữ liệu cập nhật liên tục như giá vàng, Bitcoin, cổ phiếu,... với khả năng mở rộng theo chiều ngang thông qua Docker instances.
 
-## Hướng dẫn cài đặt và chạy
+## Tính năng chính
+
+- **Lưu trữ key-value**: Lưu trữ và truy xuất dữ liệu theo cặp key-value
+- **Cập nhật thời gian thực**: Dữ liệu được cập nhật và đẩy tới người dùng ngay lập tức
+- **Dashboard quản lý**: Giao diện trực quan để quản lý các key-value
+- **Viewer theo dõi**: Trang web để theo dõi giá trị theo thời gian thực
+- **Mở rộng theo chiều ngang**: Hỗ trợ triển khai nhiều instances với Docker
+- **Caching**: Redis cache để tối ưu hiệu năng truy vấn
+- **Pattern Developer**: Rate Limiting, Retry, Publisher/Subscriber, Cache-Aside
+
+## Công nghệ sử dụng
+
+- **Back-end framework**: Express.js
+- **Realtime communication**: Socket.IO với Redis adapter
+- **Message broker**: Kafka, Zookeeper
+- **Database**: PostgreSQL với Sequelize ORM
+- **Caching**: Redis
+- **Containerization**: Docker, Docker Compose
+- **Load balancing**: Nginx
+- **Web technologies**: HTML5, CSS3, JavaScript
+
+## Kiến trúc hệ thống
+
+```
+[Client] <--Socket.IO--> [Nginx Load Balancer] <---> [App Instance 1..N]
+    |                           |                        |
+    |                           |                        v
+    |                           |                 [Data Service]
+    |                           |                        |
+    |                           |         +--------------+--------------+
+    |                           |         |                             |
+    |                           |         v                             v
+    |                           |   [Kafka Producer]             [Redis Cache] <--> [PostgreSQL]
+    |                           |         |                             ^
+    |                           |         v                             |
+    |                           |   [Kafka Broker]                      |
+    |                           |         |                             |
+    |                           |         v                             |
+    |                           |   [Kafka Consumer]                    |
+    |                           |         |                             |
+    v                           v         v                             |
+[Socket.IO] <---------------- [App Instance 1..N] ---------------------+
+    |
+    v
+[Browser]
 ```
 
-1. Cài đặt thủ công, làm theo các bước sau:
-```sh
-# Cài đặt các gói liên quan
-npm install
+### Luồng dữ liệu
+1. **Write flow**: Client → API → PostgreSQL → Redis Cache → Kafka → Socket.IO → Clients
+2. **Read flow**: Client → Redis Cache (nếu hit) → PostgreSQL (nếu cache miss) → Client
+3. **Realtime updates**: Kafka → Consumers → Socket.IO → Clients
 
-# Khởi động các container liên quan
-docker-compose up -d
+## Hướng dẫn cài đặt
+
+### Yêu cầu hệ thống
+- Docker và Docker Compose
+- Node.js (16.x hoặc cao hơn)
+- npm/yarn
+
+### Cài đặt và chạy
+
+#### 1. Clone repository
+```bash
+git clone <repository-url>
+cd KTPM-btl
 ```
 
-2. Chạy ứng dụng:
-```sh
-# Chạy ứng dụng ở chế độ production
-npm start
+#### 2. Cấu hình biến môi trường
+Tạo file `.env` ở thư mục gốc:
 
-# Hoặc chạy ở chế độ development với nodemon
-npm run dev
-```
-
-## Cấu hình môi trường
-Tạo file `.env` ở thư mục gốc với nội dung như sau:
 ```
 PORT=8080
 
@@ -39,7 +79,7 @@ PORT=8080
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_NAME=ktpm_database
+DB_NAME=ktpm_db
 DB_PORT=5432
 
 # Kafka Configuration
@@ -53,135 +93,77 @@ REDIS_PASSWORD=
 REDIS_TTL=600
 ```
 
-## Mô Tả API
-| Endpoint | Phương thức | Mục tiêu
-|--|:--:|--|
-| /add | POST | Thêm/chỉnh sửa giá trị trong database
-| /get/:key | GET | Trả về giá trị của key
-| /keys | GET | Lấy danh sách tất cả các key
-| /history/:key | GET | Lấy lịch sử thay đổi của key
-| /viewer/:key | GET | Trang web theo dõi giá trị của key
-| /admin | GET | Trang quản lý các key
-
-## Kiến trúc hệ thống
-
-### 1. Data Flow
-```
-[Client] <--Socket.IO--> [Server/API Layer]
-    |                           |
-    |                           v
-    |                    [Data Service]
-    |                           |
-    |                 +---------+---------+
-    |                 |                   |
-    |                 v                   v
-    |          [Kafka Producer]     [Redis Cache] <--> [PostgreSQL]
-    |                 |                   ^
-    |                 v                   |
-    |           [Kafka Broker]            |
-    |                 |                   |
-    |                 v                   |
-    |          [Kafka Consumer]           |
-    |                 |                   |
-    v                 v                   |
-[Socket.IO] <------ [Server] -------------+
-    |
-    v
-[Browser]
+#### 3. Khởi chạy các dịch vụ phụ trợ (PostgreSQL, Redis, Kafka)
+```bash
+docker-compose up -d
 ```
 
-### 2. Caching Strategy
-- **Read-Through Cache**: Kiểm tra cache trước, nếu miss thì đọc từ database và cập nhật cache
-- **Write-Through Cache**: Cập nhật database và cache đồng thời
-- **Cache Invalidation**: Xóa cache khi có thay đổi dữ liệu
+#### 4. Cài đặt các dependencies
+```bash
+npm install
+```
 
-### 3. Xử lý message qua Kafka
-Ứng dụng sử dụng Kafka để xử lý message theo mô hình Publisher-Subscriber:
-- **Producer**: Khi có cập nhật giá trị thông qua API `/add`
-- **Consumer**: Nhận các cập nhật và gửi đến clients qua Socket.IO
+#### 5. Khởi chạy ứng dụng
 
-## Lịch sử nâng cấp
-So với phiên bản gốc, phiên bản mới đã được nâng cấp với:
-1. **Socket.IO** thay cho long polling để cải thiện hiệu suất và giảm tải server
-2. **Lớp Persistent** sử dụng Sequelize ORM thay cho lưu trữ đơn giản
-3. **Kiến trúc Publisher-Subscriber** với Kafka giúp mở rộng quy mô dễ dàng
-4. **Redis Caching** để giảm tải cho database và tăng tốc độ phản hồi
-5. **Xử lý lỗi tập trung** thông qua middleware
-6. **Quản lý biến môi trường** thông qua dotenv
-7. **Giao diện quản lý** với trang admin.html
+**Chạy một instance (development mode):**
+```bash
+npm run dev
+```
 
-## Đánh giá hiệu năng và chất lượng sau khi nâng cấp
+#### 6. Truy cập ứng dụng
+- **Dashboard quản lý**: http://localhost/admin
+- **Viewer thời gian thực**: http://localhost/viewer/{key}
+- **Kafka UI**: http://localhost:9090
 
-### Vấn đề của chương trình gốc
-1. **Scalability (Khả năng mở rộng)**: 
-   - Việc sử dụng long polling gây tải cao cho server khi có nhiều clients
-   - Thiếu cơ chế phân phối tải
+## API Endpoints
 
-2. **Performance (Hiệu năng)**: 
-   - Long polling tạo nhiều kết nối HTTP liên tục
-   - Truy vấn database trực tiếp cho mỗi request
-   - Không có cơ chế caching
+| Endpoint         | Phương thức | Mô tả                                       |
+|------------------|:-----------:|---------------------------------------------|
+| `/add`           | POST        | Thêm/cập nhật giá trị key                   |
+| `/get/:key`      | GET         | Lấy giá trị hiện tại của key                |
+| `/keys`          | GET         | Lấy danh sách tất cả các key                |
+| `/viewer/:key`   | GET         | Trang web theo dõi giá trị theo thời gian thực |
+| `/admin`         | GET         | Dashboard quản lý key-value                |
 
-3. **Maintainability (Khả năng bảo trì)**:
-   - Thiếu cấu trúc rõ ràng và tổ chức code
-   - Thiếu ORM để quản lý database schema
 
-4. **Reliability (Độ tin cậy)**:
-   - Không có xử lý lỗi đầy đủ
-   - Thiếu logging
+## Design Pattern đã triển khai
 
-### Cải thiện hiệu năng sau khi nâng cấp
+1. **Publisher/Subscriber**: Sử dụng Kafka và Socket.IO để truyền cập nhật giá trị
+   - Mỗi update được publish lên Kafka và subscribe bởi tất cả các instances
 
-| Metric | Trước khi nâng cấp | Sau khi nâng cấp | Cải thiện |
-|--------|-------------------|-----------------|-----------|
-| Độ trễ trung bình (ms) | ~300ms | ~50ms | 83% |
-| Số lượng request/giây | ~100 | ~1000 | 900% |
+2. **Cache-Aside**: Đọc dữ liệu từ Redis cache trước, chỉ truy vấn database khi cache miss
+   - Cập nhật cache sau khi đọc từ database (read-through)
+   - Cập nhật cache khi ghi vào database (write-through)
+
+3. **Retry Pattern**: Xử lý kết nối không ổn định với các dịch vụ khác
+   - Áp dụng cho kết nối database, Kafka, và Redis
+   - Sử dụng exponential backoff để tránh quá tải
+
+## Kiến trúc mở rộng với Docker
+
+Dự án được thiết kế để dễ dàng mở rộng với Docker:
+
+1. **Load balancing**: Nginx phân phối traffic giữa các app instances
+   - Sử dụng `ip_hash` để đảm bảo sticky sessions cho WebSocket
+   - Cân bằng tải giữa các instances
+
+2. **Shared state**: Redis và Kafka đồng bộ trạng thái giữa các instances
+   - Redis adapter cho Socket.IO
+   - Kafka cho phân phối messages
+
+3. **Stateless design**: Các app instances không lưu trữ trạng thái
+   - Dễ dàng thêm/bớt instances theo nhu cầu
+   - Không bị mất dữ liệu khi một instance gặp sự cố
+
+## Đánh giá hiệu năng
+
+### Trước và sau khi áp dụng các kỹ thuật tối ưu
+
+| Metric | Trước khi tối ưu | Sau khi tối ưu | Cải thiện |
+|--------|----------------:|---------------:|-----------:|
+| Độ trễ trung bình | ~300ms | ~50ms | 83% |
+| Requests/giây | ~100 | ~1000 | 900% |
 | Thời gian phản hồi | ~500ms | ~80ms | 84% |
 | CPU Usage | 70% | 30% | 57% |
 | Memory Usage | 500MB | 300MB | 40% |
 
-### Cải thiện chất lượng sau khi nâng cấp
-
-1. **Scalability**: 
-   - Socket.IO giảm số lượng kết nối cần thiết
-   - Kafka cho phép mở rộng theo chiều ngang
-   - Redis cache giúp giảm tải cho database
-
-2. **Performance**: 
-   - Redis cache giúp truy vấn nhanh hơn
-   - Dữ liệu được cập nhật real-time thông qua Socket.IO
-   - Giảm số lượng truy vấn database
-
-3. **Maintainability**: 
-   - Cấu trúc code rõ ràng, phân chia theo chức năng
-   - Sequelize ORM giúp quản lý schema database dễ dàng
-   - Tập trung hóa xử lý lỗi
-
-4. **Reliability**: 
-   - Xử lý lỗi và retry trong Kafka Consumer
-   - Graceful degradation khi Redis hoặc Kafka không khả dụng
-   - Logging rõ ràng hơn
-
-## Yêu cầu triển khai
-| Mức độ | Mô tả | Trạng thái |
-|--|--|--|
-| ![Static Badge](https://img.shields.io/badge/OPTIONAL-medium-yellow)  | Tối ưu chương trình trên | ✅ |
-| ![Static Badge](https://img.shields.io/badge/OPTIONAL-easy-green) | Bổ sung giao diện web hoàn chỉnh hơn | ✅ |
-| ![Static Badge](https://img.shields.io/badge/OPTIONAL-easy-green) | Thay thế cơ sở dữ liệu hiện tại | ✅ |
-| ![Static Badge](https://img.shields.io/badge/REQUIRED-easy-green) | Thay thế công nghệ sử dụng cho việc gọi request liên tục trong `viewer.html` (VD: socket.io, ...) | ✅ |
-| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | Thêm lớp persistent bằng cách sử dụng ORM (Object-Relational Mapping) | ✅ |
-| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | Triển khai theo kiến trúc Publisher-Subscriber và cài đặt message broker tuỳ chọn | ✅ |
-| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | Nêu các vấn đề chương trình gốc đang gặp phải về các thuộc tính chất lượng và *đánh giá* hiệu năng sau khi nâng cấp | ✅ |
-
-1. Đo độ trễ trung bình (Latency)
-```
-artillery run test-config.yml
-```
-
-2. Đo số lượng request/giây (Throughput)
-```
-# Sử dụng Apache Bench
-ab -n 10000 -c 100 http://localhost:8080/get/test-key
-```
-
-3. Đo thời gian phản hồi (Response Time)
