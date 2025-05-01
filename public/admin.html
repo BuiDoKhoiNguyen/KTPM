@@ -220,11 +220,6 @@
       color: white;
     }
 
-    .delete-btn {
-      background-color: var(--danger-color);
-      color: white;
-    }
-
     /* Modal Styles */
     .modal-overlay {
       position: fixed;
@@ -340,7 +335,7 @@
 
     .status-active {
       background-color: rgba(46, 204, 113, 0.1);
-      color: var (--secondary-color);
+      color: var(--secondary-color);
     }
 
     /* Loader */
@@ -532,7 +527,7 @@
     
     // State
     let keysData = [];
-    let isLoading = false;  // Flag để kiểm soát các request đồng thời
+    let isLoading = false;
     let lastUpdate = null;
     
     // Connect to Socket.IO
@@ -548,10 +543,8 @@
     });
     
     socket.on('update', (data) => {
-      // Update là một key mới hoặc thay đổi từ kafka
       showAlert(`Key '${data.data.key}' has been updated`, 'success');
       
-      // Đợi một chút trước khi refresh để tránh nhiều request đồng thời
       setTimeout(() => {
         fetchAllKeys();
       }, 500);
@@ -564,7 +557,6 @@
     
     // Fetch all keys
     async function fetchAllKeys() {
-      // Nếu đang tải, không thực hiện request mới
       if (isLoading) return;
       
       isLoading = true;
@@ -576,22 +568,18 @@
         
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
-          // Update state
           keysData = data.data;
           
-          // Update UI
           totalKeysEl.textContent = keysData.length;
           lastUpdate = new Date();
           lastUpdatedEl.textContent = lastUpdate.toLocaleTimeString();
           
-          // Render keys table
           renderKeysTable(keysData);
         }
       } catch (error) {
         console.error('Error fetching keys:', error);
         showAlert('Failed to fetch keys. Please try again later.', 'error');
       } finally {
-        // Đánh dấu là đã hoàn thành tải
         isLoading = false;
       }
     }
@@ -607,10 +595,8 @@
         return;
       }
       
-      // Xóa bảng trước khi thêm mới
       keysTableBody.innerHTML = '';
       
-      // Hiển thị loader trong lúc đang tải
       const loaderRow = document.createElement('tr');
       loaderRow.innerHTML = `
         <td colspan="4" style="text-align: center;">
@@ -619,25 +605,19 @@
       `;
       keysTableBody.appendChild(loaderRow);
       
-      // Thêm đảm bảo tính duy nhất của keys
       const uniqueKeys = [...new Set(keys)];
       
-      // Fetch values for each key
       const fetchValuePromises = uniqueKeys.map(key => fetchKeyValue(key));
       
       Promise.all(fetchValuePromises)
         .then(keyDataArray => {
-          // Xóa loader
           keysTableBody.innerHTML = '';
           
-          // Tạo một bản đồ để lưu trữ keys đã xử lý
           const processedKeys = new Map();
           
           keyDataArray.forEach(keyData => {
-            // Kiểm tra nếu key đã được xử lý
             if (processedKeys.has(keyData.key)) return;
             
-            // Đánh dấu key đã được xử lý
             processedKeys.set(keyData.key, true);
             
             const row = document.createElement('tr');
@@ -653,7 +633,6 @@
             keysTableBody.appendChild(row);
           });
           
-          // Add event listeners to action buttons
           addActionButtonListeners();
         })
         .catch(error => {
@@ -673,7 +652,6 @@
         const data = await response.json();
         const value = data.value;
         
-        // Sử dụng updatedAt từ server nếu có
         const lastUpdated = data.updatedAt 
           ? new Date(data.updatedAt).toLocaleString()
           : new Date().toLocaleString();
@@ -707,7 +685,6 @@
     // Open edit modal
     async function openEditModal(key) {
       try {
-        // Fetch the current value
         const response = await fetch(`/get/${key}`);
         if (!response.ok) {
           throw new Error('Failed to fetch key value');
@@ -715,12 +692,10 @@
         
         const data = await response.json();
         
-        // Fill the form
         editKeyIdInput.value = key;
         editKeyNameInput.value = key;
         editKeyValueInput.value = data.value;
         
-        // Show the modal
         editKeyModal.classList.add('active');
       } catch (error) {
         console.error('Error opening edit modal:', error);
@@ -764,7 +739,7 @@
           showAlert(`Key '${key}' added successfully!`, 'success');
           keyNameInput.value = '';
           keyValueInput.value = '';
-          fetchAllKeys(); // Refresh the data
+          fetchAllKeys();
         } else {
           showAlert('Failed to add key. Please try again.', 'error');
         }
@@ -802,7 +777,7 @@
         if (data.success) {
           closeEditModal();
           showAlert(`Key '${key}' updated successfully!`, 'success');
-          fetchAllKeys(); // Refresh the data
+          fetchAllKeys();
         } else {
           showAlert('Failed to update key. Please try again.', 'error');
         }
