@@ -1,39 +1,133 @@
-// config/redis.js
-const Redis = require("ioredis");
+const Redis = require('ioredis');
 
-const redis = new Redis({
-    host: process.env.REDIS_HOST || "localhost",
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD || "",
-    retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-    },
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: process.env.REDIS_PORT || 6379,
+  maxRetriesPerRequest: 1, 
+  enableOfflineQueue: false,
+  connectTimeout: 1000, 
+  retryStrategy(times) {
+    if (times > 3) { 
+      return null;
+    }
+    return Math.min(times * 100, 1000);    
+  }
+};
 
-redis.on("error", (err) => console.error("Redis Client Error:", err));
-redis.on("connect", () => console.log("Connected to Redis"));
-redis.on("ready", () => console.log("Redis client ready"));
-redis.on("reconnecting", () => console.log("Redis client reconnecting..."));
+const redisPool = {
+  _clients: {},
 
-const DEFAULT_TTL = parseInt(process.env.REDIS_TTL || 600);
+  getClient(name = 'default') {
+    if (!this._clients[name]) {
+      this._clients[name] = new Redis(redisConfig);
+      this._clients[name].on('error', (err) => {
+        console.error(`Redis client ${name} error:`, err);
+      });
+      this._clients[name].on('ready', () => {
+        console.log(`Redis client ${name} connected and ready`);
+      });
+    }
+    return this._clients[name];
+  },
+  
+  // Đóng tất cả connections khi cần
+  closeAll() {
+    Object.values(this._clients).forEach(client => {
+      client.quit();
+    });
+    this._clients = {};
+  }
+};
 
-// Helper functions for cache
+const redisClient = redisPool.getClient('client');
+const publisherClient = redisPool.getClient('publisher');
+const subscriberClient = redisPool.getClient('subscriber');
+
 const cacheUtils = {
-    async getCache(key) {
-        return await redis.get(key);
-    },
+  async getCache(key) {
+    try {
+      return await redisClient.get(key);
+    } catch (error) {
+      console.warn(`Redis GET error for key ${key}:`, error.message);
+      return null;
+    }
+  },
 
-    async setCache(key, value, ttl = DEFAULT_TTL) {
-        return await redis.set(key, value, "EX", ttl);
-    },
+  async setCache(key, value, ttl) {
+    try {
+      if (ttl) {
+        return await redisClient.set(key, value, 'EX', ttl);
+      }
+      return await redisClient.set(key, value);
+    } catch (error) {
+      console.warn(`Redis SET error for key ${key}:`, error.message);
+      return false;
+    }
+  },
 
-    async deleteCache(key) {
-        return await redis.del(key);
-    },
+  async deleteCache(key) {
+    try {
+      return await redisClient.del(key);
+    } catch (error) {
+      console.warn(`Redis DEL error for key ${key}:`, error.message);
+      return 0;
+    }
+  },
+
+  // Kiểm tra kết nối Redis
+  async ping() {
+    try {
+      const result = await redisClient.ping();
+      return result === 'PONG';
+    } catch (error) {
+      console.warn('Redis PING error:', error.message);
+      return false;
+    }
+  }
+};
+
+// PubSub utils với xử lý lỗi tốt hơn và ít logging hơn
+const pubSubUtils = {
+  async publish(channel, message) {
+    try {
+      return await publisherClient.publish(
+        channel, 
+        JSON.stringify(message)
+      );
+    } catch (error) {
+      console.warn(`Redis PUBLISH error:`, error.message);
+      return 0;
+    }
+  },
+  
+  // Subscribe to a channel
+  subscribe(channel, callback) {
+    subscriberClient.subscribe(channel, (err) => {
+      if (err) {
+        console.error(`Error subscribing to channel ${channel}:`, err.message);
+        return;
+      }
+    });
+    
+    // Event listeners cho ioredis - giảm thiểu logging
+    subscriberClient.on('message', (receivedChannel, message) => {
+      if (receivedChannel === channel) {
+        try {
+          const parsedMessage = JSON.parse(message);
+          callback(parsedMessage);
+        } catch (error) {
+          callback(message);
+        }
+      }
+    });
+  },
 };
 
 module.exports = {
-    redis,
-    cacheUtils,
+  redisClient,
+  publisherClient,
+  subscriberClient,
+  cacheUtils,
+  pubSubUtils,
+  redisPool
 };

@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const { writeData, readData, getAllKeys } = require('../services/dataService');
+const { postLimiter, adminLimiter, getLimiter } = require('../middleware/rateLimiter');
 
+// Áp dụng rate limit nghiêm ngặt hơn cho API POST (thêm/sửa dữ liệu)
 router.post('/add', async (req, res) => {
   try {
     const { key, value } = req.body;
@@ -19,6 +21,7 @@ router.post('/add', async (req, res) => {
   }
 });
 
+// Áp dụng rate limit cho API GET
 router.get('/get/:key', async (req, res) => {
   try {
     const key = req.params.key;

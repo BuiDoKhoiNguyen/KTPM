@@ -5,45 +5,57 @@ const http = require('http');
 const path = require('path');
 const bodyParser = require('body-parser');
 const socketIO = require('socket.io')
-
-// Import configs & services
-const db = require('./config/database');
 const apiRoutes = require('./routes/api');
-const kafkaService = require('./services/kafkaService');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { initializeDatabase } = require('./db/init');
-const { redis } = require('./config/redis');
+const { initializeDatabase } = require('./config/database');
+const { redisClient, pubSubUtils } = require('./config/redis');
 const socketService = require('./services/socketService');
 
-// docker-compose build app && docker-compose up -d
 // App setup
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-// Middleware
+const channelName = process.env.REDIS_CHANNEL || 'data-updates';
+let isSubscribed = false;
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+async function ensureRedisSubscription() {
+  if (isSubscribed) return true;
+  
+  try {
+    pubSubUtils.subscribe(channelName, (message) => {
+      try {
+        if (message && message.key) {
+          // Emit qua socket
+          socketService.emitUpdate(message.key, message.value);
+        }
+      } catch (error) {
+        console.error('Error processing message:', error.message);
+      }
+    });
+    
+    isSubscribed = true;
+    return true;
+  } catch (error) {
+    console.error('Subscription error:', error.message);
+    return false;
+  }
+}
+
 async function startServer() {
   try {
-    await db.authenticate();
-    console.log('Database connected');
-
-    await initializeDatabase();
-    
+    initializeDatabase();
+  
     socketService.init(io);
-
-    await kafkaService.connect().catch(err => {
-      console.error('Failed to connect to Kafka:', err);
-      console.error('Continuing without Kafka...');
+    
+    await ensureRedisSubscription().catch(err => {
+      console.error('Failed to subscribe to Redis channel:', err.message);
     });
 
     // Routes
     app.use('/', apiRoutes);
-    
-    app.use(notFoundHandler);
-    app.use(errorHandler);
 
     // Start server
     const PORT = process.env.PORT || 8080;
@@ -56,12 +68,13 @@ async function startServer() {
   }
 }
 
-redis.on('ready', () => {
+// Start server when Redis is ready
+redisClient.on('ready', () => {
   console.log('Redis cache is ready, starting server...');
   startServer();
 });
 
-redis.on('error', (err) => {
+redisClient.on('error', (err) => {
   console.error('Redis connection error:', err);
   console.log('Starting server without Redis cache...');
   startServer();

@@ -542,14 +542,6 @@
       updateConnectionStatus('Disconnected', false);
     });
     
-    socket.on('update', (data) => {
-      showAlert(`Key '${data.data.key}' has been updated`, 'success');
-      
-      setTimeout(() => {
-        fetchAllKeys();
-      }, 500);
-    });
-    
     // Fetch all keys on page load
     window.addEventListener('DOMContentLoaded', () => {
       fetchAllKeys();
@@ -560,24 +552,80 @@
       if (isLoading) return;
       
       isLoading = true;
+      keysTableBody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center;">
+            <div class="loader"></div> Loading keys...
+          </td>
+        </tr>
+      `;
+      
       try {
+        console.log('Fetching keys from API...');
         const response = await fetch('/keys');
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch keys');
+          throw new Error(`API error: ${response.status}`);
         }
         
         const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          keysData = data.data;
-          
-          totalKeysEl.textContent = keysData.length;
-          lastUpdate = new Date();
-          lastUpdatedEl.textContent = lastUpdate.toLocaleTimeString();
-          
-          renderKeysTable(keysData);
+        console.log('API response:', data);
+        
+        if (data.success) {
+          // Kiểm tra xem data.data là gì
+          if (Array.isArray(data.data)) {
+            // Trường hợp API trả về mảng keys trực tiếp
+            keysData = data.data;
+            totalKeysEl.textContent = keysData.length || 0;
+            lastUpdatedEl.textContent = new Date().toLocaleString();
+            
+            if (keysData.length > 0) {
+              renderKeysTable(keysData);
+            } else {
+              keysTableBody.innerHTML = `
+                <tr>
+                  <td colspan="4" style="text-align: center;">No keys found</td>
+                </tr>
+              `;
+            }
+          } else if (data.data && data.data.keys && Array.isArray(data.data.keys)) {
+            keysData = data.data.keys;
+            totalKeysEl.textContent = keysData.length || 0;
+            
+            if (data.data.updatedAt && data.data.updatedAt.length > 0) {
+              lastUpdatedEl.textContent = new Date(data.data.updatedAt[0]).toLocaleString();
+            } else {
+              lastUpdatedEl.textContent = new Date().toLocaleString();
+            }
+            
+            if (keysData.length > 0) {
+              renderKeysTable(keysData);
+            } else {
+              keysTableBody.innerHTML = `
+                <tr>
+                  <td colspan="4" style="text-align: center;">No keys found</td>
+                </tr>
+              `;
+            }
+          } else {
+            // Không có dữ liệu hợp lệ
+            keysTableBody.innerHTML = `
+              <tr>
+                <td colspan="4" style="text-align: center;">No valid data format received</td>
+              </tr>
+            `;
+            console.error('Unexpected data format:', data);
+          }
+        } else {
+          throw new Error('API returned success: false');
         }
       } catch (error) {
         console.error('Error fetching keys:', error);
+        keysTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center;">Error: ${error.message}</td>
+          </tr>
+        `;
         showAlert('Failed to fetch keys. Please try again later.', 'error');
       } finally {
         isLoading = false;

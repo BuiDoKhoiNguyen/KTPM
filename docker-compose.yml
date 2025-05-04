@@ -5,10 +5,6 @@ networks:
     driver: bridge
 
 volumes:
-  zookeeper_data:
-    driver: local
-  kafka_data:
-    driver: local
   redis_data:
     driver: local
   postgres_data:
@@ -29,13 +25,11 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=ktpm_db
       - DB_PORT=5432
-      - KAFKA_BROKERS=kafka:9093
-      - KAFKA_TOPIC=data-events
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_CHANNEL=data-updates
       - NODE_ENV=production
     depends_on:
-      - kafka
       - redis
       - postgres
     deploy:
@@ -62,56 +56,6 @@ services:
       - app_network
     restart: on-failure
 
-  # Zookeeper
-  zookeeper:
-    container_name: zookeeper-ktpm
-    image: "bitnami/zookeeper:3.8.1"
-    ports:
-      - "2181:2181"
-    volumes:
-      - "zookeeper_data:/bitnami"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    networks:
-      - app_network
-
-  kafka:
-    container_name: kafka-ktpm
-    image: "bitnami/kafka:3.4.1"
-    ports:
-      - "9092:9092"
-    expose:
-      - "9093"
-    volumes:
-      - "kafka_data:/bitnami"
-    environment:
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_ADVERTISED_LISTENERS=INSIDE://kafka:9093,OUTSIDE://localhost:9092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      - KAFKA_LISTENERS=INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INSIDE
-      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
-    depends_on:
-      - zookeeper
-    networks:
-      - app_network
-
-  kafka-ui:
-    container_name: kafka-ui-ktpm
-    image: provectuslabs/kafka-ui
-    ports:
-      - "9090:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9093
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    depends_on:
-      - kafka
-    restart: always
-    networks:
-      - app_network
-  
   redis:
     container_name: redis-ktpm
     image: redis:latest
