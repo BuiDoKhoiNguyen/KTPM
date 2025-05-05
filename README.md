@@ -1,199 +1,214 @@
-# Key-Value Real-time System (KTPM-BTL)
+# Hệ Thống Key-Value Thời Gian Thực (KTPM-BTL)
 
-Hệ thống lưu trữ và cập nhật key-value thời gian thực với khả năng mở rộng cao, được thiết kế đặc biệt cho dữ liệu cần cập nhật liên tục như giá vàng, Bitcoin, cổ phiếu và các thông tin tài chính theo thời gian thực khác.
+Một hệ thống lưu trữ và phân phối cặp key-value thời gian thực có khả năng mở rộng được thiết kế cho dữ liệu cập nhật liên tục như giá tiền điện tử, báo giá chứng khoán và thông tin tài chính.
 
-## 📋 Tổng quan
+## Tổng Quan
 
-KTPM-BTL là một hệ thống key-value hiện đại được xây dựng với kiến trúc microservices, hỗ trợ:
-- Lưu trữ và truy xuất dữ liệu theo cặp key-value
-- Cập nhật và đồng bộ dữ liệu theo thời gian thực
-- Khả năng mở rộng theo chiều ngang thông qua Docker
-- Hiệu suất cao với Redis caching
+KTPM-BTL là một kho lưu trữ key-value hiệu năng cao với kiến trúc microservices hiện đại cung cấp:
+- Lưu trữ và truy xuất nhanh các cặp key-value
+- Cập nhật thời gian thực qua WebSockets sử dụng Socket.IO
+- Khả năng mở rộng theo chiều ngang với Docker containerization
+- Bộ nhớ đệm Redis để cải thiện hiệu suất
+- Tổ chức dữ liệu theo danh mục
 
-## ✨ Tính năng chính
+## Tính Năng Chính
 
-- **Quản lý key-value**: API đơn giản để lưu trữ, cập nhật và truy xuất dữ liệu
-- **Cập nhật thời gian thực**: Dữ liệu được đẩy đến clients ngay lập tức khi có thay đổi
-- **Dashboard quản lý**: Giao diện trực quan cho người quản trị
-- **Viewer theo dõi**: Trang theo dõi giá trị theo thời gian thực cho người dùng
-- **Khả năng mở rộng cao**: Hỗ trợ triển khai nhiều instances với Docker
-- **Caching thông minh**: Redis cache giảm tải database và tối ưu hiệu năng truy vấn
-- **Mẫu thiết kế hiện đại**: Rate Limiting, Retry Pattern, Publisher/Subscriber, Cache-Aside
+- **REST API**: Các endpoint đơn giản cho việc quản lý dữ liệu
+- **Cập nhật thời gian thực**: Kiến trúc theo hướng đẩy sử dụng Socket.IO
+- **Bảng điều khiển quản trị**: Giao diện trực quan cho việc quản lý dữ liệu
+- **Trình xem thời gian thực**: Hiển thị tương tác để theo dõi giá trị trực tiếp
+- **Hệ thống danh mục**: Tổ chức dữ liệu với các danh mục có thể tùy chỉnh
+- **Hỗ trợ nhiều phiên bản**: Mở rộng theo chiều ngang với cân bằng tải
+- **Bộ nhớ đệm Redis**: Giảm tải cơ sở dữ liệu và cải thiện thời gian phản hồi
+- **Giới hạn tốc độ**: Bảo vệ chống lạm dụng API
 
-## 🛠 Công nghệ sử dụng
+## Công Nghệ Sử Dụng
 
-| Công nghệ | Chi tiết |
+| Thành phần | Công nghệ |
 |-----------|----------|
 | **Back-end** | Express.js |
-| **Realtime** | Socket.IO với Redis adapter |
-| **Message Broker** | Redis PubSub |
-| **Database** | PostgreSQL với Sequelize ORM |
-| **Caching** | Redis |
+| **Thời gian thực** | Socket.IO với Redis adapter |
+| **Nhắn tin** | Redis PubSub |
+| **Cơ sở dữ liệu** | PostgreSQL với Sequelize ORM |
+| **Bộ nhớ đệm** | Redis (ioredis) |
 | **Containerization** | Docker, Docker Compose |
-| **Load Balancing** | Nginx |
-| **Front-end** | HTML5, CSS3, JavaScript |
+| **Cân bằng tải** | Nginx |
+| **Front-end** | HTML, CSS, JavaScript |
 
-## 🏗 Kiến trúc hệ thống
+## Kiến Trúc Hệ Thống
 
 ```
-[Client] <--Socket.IO--> [Nginx Load Balancer] <---> [App Instance 1..N]
-    |                           |                        |
-    |                           |                        v
-    |                           |                 [Data Service]
-    |                           |                        |
-    |                           |         +--------------+--------------+
-    |                           |         |                             |
-    |                           |         v                             v
-    |                           |   [Redis PubSub]                [Redis Cache] <--> [PostgreSQL]
-    |                           |         |                             ^
-    |                           |         v                             |
-    |                           |   [PubSub Broker]                     |
-    |                           |         |                             |
-    |                           |         v                             |
-    |                           |   [PubSub Consumer]                   |
-    |                           |         |                             |
-    v                           v         v                             |
-[Socket.IO] <---------------- [App Instance 1..N] ---------------------+
-    |
-    v
-[Browser]
+[Trình duyệt Client] <--Socket.IO--> [Cân bằng tải Nginx] <---> [App Instance 1..N]
+          |                               |                           |
+          |                               |                           v
+          |                               |                    [Data Service]
+          |                               |                           |
+          |                               |             +-------------+-------------+
+          |                               |             |                           |
+          |                               |             v                           v
+          |                               |      [Redis PubSub]               [Redis Cache] <--> [PostgreSQL]
+          |                               |             |                           ^
+          v                               v             v                           |
+[Socket.IO Client] <------------- [App Instance 1..N] --------------------------+
 ```
 
-### Luồng dữ liệu
-1. **Write flow**: Client → API → PostgreSQL → Redis Cache → Redis PubSub → Socket.IO → Clients
-2. **Read flow**: Client → Redis Cache (nếu hit) → PostgreSQL (nếu cache miss) → Client
-3. **Realtime updates**: Redis PubSub → Consumers → Socket.IO → Clients
+### Luồng Dữ Liệu
+1. **Đường đi ghi**: Client → API → PostgreSQL → Redis Cache → Redis PubSub → Socket.IO → Clients
+2. **Đường đi đọc**: Client → Redis Cache (nếu cache hit) → PostgreSQL (nếu cache miss) → Client
+3. **Cập nhật thời gian thực**: Redis PubSub → Socket.IO → Clients
 
-## 📦 Yêu cầu hệ thống
+### Hệ Thống Phân Chia Kênh Redis PubSub
 
-- Docker và Docker Compose
-- Node.js (16.x hoặc cao hơn)
-- npm hoặc yarn
+KTPM-BTL sử dụng Redis PubSub để phân phối cập nhật dữ liệu giữa các instance với cấu trúc kênh theo danh mục:
 
-## 🚀 Cài đặt và chạy
+#### Cấu trúc kênh:
+- **Kênh theo danh mục**: `data-updates:{category}` 
+- **Kênh mặc định**: `data-updates:default` (cho dữ liệu không thuộc danh mục cụ thể)
+
+#### Quy tắc định tuyến tin nhắn:
+1. **Cập nhật theo danh mục**: Khi dữ liệu được cập nhật, tin nhắn được phát đến kênh tương ứng với danh mục của dữ liệu
+2. **Fallback mặc định**: Dữ liệu không thuộc danh mục cụ thể sẽ được phát đến kênh `data-updates:default`
+
+#### Cơ chế đăng ký:
+- Mỗi instance đăng ký các kênh cụ thể dựa trên danh mục
+- Socket.IO clients được kết nối tới các kênh tương ứng với danh mục họ quan tâm
+
+#### Lợi ích của hệ thống phân chia kênh:
+- **Phân tách mối quan tâm**: Dễ dàng tổ chức và quản lý dữ liệu theo chủ đề
+- **Tối ưu hóa hiệu suất**: Giảm khối lượng thông điệp không cần thiết, tránh được bottleneck
+
+#### Ví dụ về luồng thông điệp:
+1. Client cập nhật giá Bitcoin thông qua API với category "crypto"
+2. Giá trị được lưu vào PostgreSQL và Redis Cache
+3. Thông điệp được phát đến kênh `data-updates:crypto`
+4. Các instances đăng ký nhận thông điệp và cập nhật cho clients thông qua Socket.IO
+5. Clients theo dõi giá Bitcoin thấy giá được cập nhật ngay lập tức
+
+## 🧩 Các Mẫu Thiết Kế
+
+### 1. Publisher/Subscriber
+- Sử dụng Redis PubSub để phân phối tin nhắn
+- Cho phép nhiều phiên bản nhận cùng một cập nhật
+- Hỗ trợ các kênh nhắn tin dựa trên danh mục
+
+### 2. Cache-Aside Pattern
+- Kiểm tra bộ nhớ đệm Redis trước khi truy cập cơ sở dữ liệu
+- Cập nhật bộ nhớ đệm sau khi đọc cơ sở dữ liệu (cache warming)
+- Cập nhật bộ nhớ đệm khi ghi (write-through)
+
+### 3. Retry Pattern
+- Xử lý lỗi tạm thời trong các dịch vụ bên ngoài
+- Triển khai exponential backoff cho các nỗ lực kết nối lại
+- Giảm dần hiệu suất một cách nhẹ nhàng khi các dịch vụ không khả dụng
+
+### 4. Rate Limiting
+- Bảo vệ API khỏi lạm dụng và tấn công DoS
+- Giới hạn riêng cho các hoạt động đọc và ghi
+- Theo dõi tần suất yêu cầu dựa trên IP
+
+## Cài Đặt & Thiết Lập
 
 ### 1. Clone repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/yourusername/KTPM-btl.git
 cd KTPM-btl
 ```
 
-### 2. Cấu hình biến môi trường
-Tạo file `.env` ở thư mục gốc với nội dung:
+### 2. Tạo cấu hình môi trường
+Tạo một tệp `.env` trong thư mục gốc của dự án:
 
 ```
 PORT=8080
 
-# Database Configuration
+# Cấu hình Cơ sở dữ liệu
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=ktpm_db
 DB_PORT=5432
 
-# Redis Configuration
+# Cấu hình Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_TTL=600
+REDIS_CHANNEL=data-updates
 ```
 
-### 3. Khởi chạy các dịch vụ phụ trợ
-```bash
-docker-compose up -d
-```
-
-### 4. Cài đặt các dependencies
+### 3. Cài đặt các gói phụ thuộc
 ```bash
 npm install
 ```
 
-### 5. Khởi chạy ứng dụng
+### 4. Khởi chạy với Docker Compose
+Để chạy môi trường đầy đủ với PostgreSQL, Redis và Nginx:
+```bash
+docker-compose up -d
+```
 
-#### Development mode (một instance)
+### 5. Chế độ phát triển (một phiên bản)
 ```bash
 npm run dev
 ```
 
-#### Production mode (với Docker)
+## Các Endpoint API
+
+| Endpoint | Phương thức | Mô tả | Body/Parameters |
+|----------|:------:|-------------|----------------|
+| `/add` | POST | Thêm hoặc cập nhật một cặp key-value | `{ key: string, value: any, category?: string }` |
+| `/get/:key` | GET | Lấy giá trị cho một key | `key`: tham số đường dẫn |
+| `/keys` | GET | Liệt kê tất cả các key có sẵn | - |
+| `/viewer/:key` | GET | Mở trình xem thời gian thực cho một key | `key`: tham số đường dẫn |
+| `/admin` | GET | Mở bảng điều khiển quản trị | - |
+| `/benchmark-report` | GET | Hiển thị báo cáo benchmark | - |
+
+## Benchmark & Đánh Giá Hiệu Năng
+
+### Chạy Benchmark
+
+Benchmark giữa KTPM-base và KTPM-btl để so sánh hiệu năng:
+
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+# Chạy đầy đủ benchmark suite
+node benchmark.js
+
+# Xem kết quả trực quan
+open http://localhost:8080/benchmark-report
 ```
 
-### 6. Truy cập ứng dụng
-- **Dashboard quản lý**: http://localhost/admin
-- **Viewer thời gian thực**: http://localhost/viewer/{key}
-- **Redis UI**: http://localhost:8081
+### Kịch Bản Benchmark
 
-## 📡 API Endpoints
+1. **So sánh API GET/ADD**
+   - Đo thời gian phản hồi và throughput cho cả hai phiên bản từ 200-1000 connections
+   - So sánh tỷ lệ thành công và độ ổn định
 
-| Endpoint | Method | Mô tả | Payload/Params |
-|----------|:------:|-------|---------------|
-| `/add` | POST | Thêm/cập nhật giá trị key | `{ key: string, value: any }` |
-| `/get/:key` | GET | Lấy giá trị hiện tại | `key`: tên key cần truy vấn |
-| `/keys` | GET | Lấy danh sách tất cả keys | - |
-| `/viewer/:key` | GET | Trang theo dõi thời gian thực | `key`: tên key cần theo dõi |
-| `/admin` | GET | Dashboard quản lý key-value | - |
+2. **Hiệu Năng Cache**
+   - So sánh thời gian phản hồi giữa cache hit và cache miss
+   - Đánh giá sự cải thiện của Redis cache
 
-## 🧩 Design Pattern
+3. **Khả Năng Chịu Tải**
+   - Test với nhiều requests đồng thời
+   - So sánh single-instance và multi-instance deployment
 
-### 1. Publisher/Subscriber
-- Sử dụng Redis PubSub để truyền cập nhật giá trị
-- Mỗi update được publish và subscribe bởi tất cả instances
-- Đảm bảo đồng bộ dữ liệu trên nhiều instances
+### Kết Quả Benchmark
 
-### 2. Cache-Aside
-- Đọc dữ liệu từ Redis cache trước, chỉ truy vấn database khi cache miss
-- Cache được cập nhật sau khi đọc từ database (read-through)
-- Cache được cập nhật khi ghi vào database (write-through)
+Kết quả benchmark thu thập ngày 5 tháng 5 năm 2025:
 
-### 3. Retry Pattern
-- Xử lý kết nối không ổn định với các dịch vụ khác
-- Áp dụng cho kết nối database, Redis PubSub
-- Sử dụng exponential backoff để tránh quá tải hệ thống
+| Chỉ số | KTPM-base | KTPM-btl | Cải thiện |
+|--------|-----------|----------|-----------|
+| GET API (avg time) | 41.52ms | 37.30ms | +10.16% |
+| GET API (req/sec) | 5,031 | 5,586 | +11.03% |
+| ADD API (avg time) | 98.17ms | 89.84ms | +8.48% |
+| ADD API (req/sec) | 2,045 | 2,306 | +12.76% |
+| Cache Hit vs Miss | none | 83.57% | Cải thiện đáng kể |
 
-### 4. Rate Limiting
-- Giới hạn số lượng request từ một client trong một khoảng thời gian
-- Bảo vệ hệ thống khỏi các tấn công DoS
+#### Hiệu Năng Cache:
+- **Yêu cầu đầu tiên (cold cache)**: 1.42ms
+- **Yêu cầu tiếp theo (warm cache)**: 0.23ms
+- **Cải thiện từ cache**: 83.57%
 
-## 🔄 Kiến trúc mở rộng
 
-KTPM-BTL được thiết kế để dễ dàng mở rộng theo chiều ngang:
 
-### 1. Load balancing với Nginx
-- Phân phối traffic giữa các app instances
-- Sử dụng `ip_hash` để đảm bảo sticky sessions cho WebSocket
-- Tự động định tuyến request đến các instance khỏe mạnh
 
-### 2. Shared state
-- Redis đồng bộ trạng thái giữa các instances
-- Redis adapter cho Socket.IO đảm bảo broadcast events đến tất cả instances
-- Redis PubSub cho phân phối messages
 
-### 3. Stateless design
-- Các app instances không lưu trữ trạng thái
-- Dễ dàng thêm/bớt instances theo nhu cầu
-- Không mất dữ liệu khi một instance gặp sự cố
-
-## 📊 So sánh hiệu năng với KTPM-base
-
-KTPM-BTL cải thiện đáng kể hiệu năng so với KTPM-base:
-
-| Metric | Cải thiện trung bình |
-|--------|----------------------|
-| Số lượng requests/giây | +15% |
-| Độ trễ trung bình | -10% |
-| Độ trễ P99 | -25% |
-| Khả năng xử lý dữ liệu lớn | +30% |
-
-*Kết quả đo từ bài kiểm tra với 500-1000 kết nối đồng thời
-
-## 📖 Tài liệu tham khảo
-- [Socket.IO Documentation](https://socket.io/docs/)
-- [Redis Documentation](https://redis.io/documentation)
-- [Express.js Documentation](https://expressjs.com/)
-- [Docker Documentation](https://docs.docker.com/)
-
-## 📝 License
-MIT License
 

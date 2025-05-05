@@ -1,7 +1,6 @@
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
-// Tạo kết nối Sequelize với PostgreSQL
 const sequelize = new Sequelize({
     dialect: 'postgres',
     host: process.env.DB_HOST || 'localhost',
@@ -23,7 +22,6 @@ async function initializeDatabase() {
         await sequelize.authenticate();
         console.log('PostgreSQL connection has been established successfully.');
         
-        // Sync các model với database với tùy chọn alter: true
         await sequelize.sync({ alter: true });
         console.log('Database initialized and models synced successfully with altered tables');
     } catch (error) {

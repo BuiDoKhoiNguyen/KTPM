@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-05-05T15:32:46.230Z",
+  "getRequests": {
+    "base": {
+      "times": [
+        59.129542,
+        38.743709,
+        42.643458,
+        33.1165,
+        33.981084
+      ],
+      "avgTime": 41.522858600000006,
+      "minTime": 33.1165,
+      "maxTime": 59.129542,
+      "successRate": 100,
+      "rps": 5031
+    },
+    "optimized": {
+      "times": [
+        52.78175,
+        37.634375,
+        33.724458,
+        33.583917,
+        28.800042
+      ],
+      "avgTime": 37.304908399999995,
+      "minTime": 28.800042,
+      "maxTime": 52.78175,
+      "successRate": 100,
+      "rps": 5586
+    }
+  },
+  "addRequests": {
+    "base": {
+      "times": [
+        104.214834,
+        97.220167,
+        99.513333,
+        87.194166,
+        102.683084
+      ],
+      "avgTime": 98.16511679999999,
+      "minTime": 87.194166,
+      "maxTime": 104.214834,
+      "successRate": 100,
+      "rps": 2045
+    },
+    "optimized": {
+      "times": [
+        127.564375,
+        74.612959,
+        83.946875,
+        81.029834,
+        82.059709
+      ],
+      "avgTime": 89.8427504,
+      "minTime": 74.612959,
+      "maxTime": 127.564375,
+      "successRate": 100,
+      "rps": 2306
+    }
+  },
+  "cachingPerformance": {
+    "firstRequestTime": 1.418334,
+    "subsequentAvgTime": 0.233055,
+    "improvement": 83.56839785269196
+  },
+  "comparison": {
+    "getSpeedImprovement": 10.158140220143732,
+    "addSpeedImprovement": 8.477926448104622,
+    "getThroughputImprovement": 11.03160405485987,
+    "addThroughputImprovement": 12.76283618581907
+  }
+}

@@ -13,9 +13,6 @@
       --background-color: #f8f9fa;
       --card-bg: #ffffff;
       --text-color: #333;
-      --border-radius: 12px;
-      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      --transition: all 0.3s ease;
     }
 
     body {
@@ -28,85 +25,57 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      transition: var(--transition);
     }
 
     .container {
       width: 90%;
-      max-width: 800px;
-      border-radius: var(--border-radius);
+      max-width: 600px;
+      border-radius: 10px;
       overflow: hidden;
-      box-shadow: var(--box-shadow);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       background-color: var(--card-bg);
       margin: 20px;
-      transition: var(--transition);
     }
 
     .header {
       background: linear-gradient(135deg, var(--primary-color), #34495e);
       color: white;
-      padding: 20px;
+      padding: 15px;
       text-align: center;
       position: relative;
-      border-radius: var(--border-radius) var(--border-radius) 0 0;
     }
 
     .header h1 {
       margin: 0;
-      font-size: 28px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
+      font-size: 24px;
     }
 
     .badge {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 15px;
+      right: 15px;
       background-color: var(--secondary-color);
       color: white;
-      padding: 4px 12px;
+      padding: 4px 10px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.05);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
     }
 
     .value-container {
-      padding: 20px;
+      padding: 15px;
       background-color: rgba(52, 152, 219, 0.05);
       text-align: center;
     }
 
     .key-title {
-      margin-top: 0;
-      color: var(--primary-color);
-      font-size: 20px;
-      font-weight: 500;
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-top: 0;
     }
 
     #key-display {
-      color: var(--text-color);
-      font-weight: 700;
       margin-left: 8px;
       background-color: rgba(52, 152, 219, 0.1);
       padding: 2px 8px;
@@ -114,64 +83,53 @@
     }
 
     .value {
-      font-size: 32px;
+      font-size: 24px;
       font-weight: 700;
-      color: var(--text-color);
-      padding: 20px;
-      margin: 15px auto;
+      padding: 15px;
+      margin: 10px auto;
       background-color: var(--card-bg);
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-      max-width: 80%;
+      max-width: 90%;
       word-break: break-all;
-      transition: var(--transition);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
 
     .status {
-      padding: 10px 20px;
+      padding: 10px;
       background-color: #e8f5e9;
       color: #2e7d32;
       text-align: center;
       font-size: 14px;
-      font-weight: 500;
-      transition: var(--transition);
     }
 
     .blink {
-      animation: highlightValue 1s;
+      background-color: rgba(46, 204, 113, 0.2);
+      transition: background-color 1s;
     }
 
-    @keyframes highlightValue {
-      0% {
-        background-color: rgba(46, 204, 113, 0.2);
-      }
-      100% {
-        background-color: var(--card-bg);
-      }
+    .category-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: #e2e2e2;
+      color: #444;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
     }
 
-    /* Responsive design */
-    @media (max-width: 600px) {
-      .container {
-        width: 95%;
-        margin: 10px;
-      }
-      
-      .value {
-        font-size: 24px;
-        padding: 15px;
-      }
-      
-      .header h1 {
-        font-size: 22px;
-      }
-    }
+    /* Predefined categories */
+    .category-default { background-color: #e2e2e2; color: #444; }
+    .category-premium { background-color: #ffd700; color: #333; }
+    .category-system { background-color: #3498db; color: white; }
+    .category-analytics { background-color: #2ecc71; color: white; }
 
-    /* Dark mode - can be activated with JavaScript */
-    .dark-mode {
-      --background-color: #1a1a2e;
-      --card-bg: #16213e;
-      --text-color: #e6e6e6;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #1a1a2e;
+        --card-bg: #16213e;
+        --text-color: #e6e6e6;
+      }
     }
   </style>
 </head>
@@ -183,7 +141,10 @@
     </div>
     
     <div class="value-container">
-      <h2 class="key-title">Key: <span id="key-display">Loading...</span></h2>
+      <h2 class="key-title">
+        Key: <span id="key-display">Loading...</span>
+        <span id="category-badge" class="category-badge">default</span>
+      </h2>
       <div>Current Value:</div>
       <div class="value" id="value">Loading...</div>
     </div>
@@ -192,60 +153,58 @@
   </div>
 
   <script>
-    // Extract key from URL
-    const locationPath = window.location.pathname.split("/");
-    const key = locationPath[locationPath.length - 1];
-    document.getElementById('key-display').textContent = key;
-    document.title = `Data Viewer - ${key}`;
-    
-    // Connect to Socket.IO
+    // Core elements
+    const key = window.location.pathname.split("/").pop();
     const socket = io();
     const statusElement = document.getElementById('status');
     const valueElement = document.getElementById('value');
+    const categoryBadge = document.getElementById('category-badge');
+    
+    // Set page title and key display
+    document.getElementById('key-display').textContent = key;
+    document.title = `Data Viewer - ${key}`;
+    
+    // Track current category for room management
+    let currentCategory = null;
     
     // Initial data fetch
-    async function fetchInitialValue() {
-      try {
-        const response = await fetch(`/get/${key}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          updateValue(data.value, new Date(data.updatedAt || Date.now()));
-        } else if (response.status === 404) {
-          valueElement.innerText = "No value found";
-          valueElement.style.color = "#e74c3c";
+    fetch(`/get/${key}`)
+      .then(response => {
+        if (response.ok) return response.json();
+        if (response.status === 404) throw new Error('not-found');
+        throw new Error('server-error');
+      })
+      .then(data => {
+        if (data && data.value !== undefined) {
+          if (data.category) updateCategory(data.category);
+          updateValue(data.value);
+          statusElement.textContent = `Connected! Last updated: ${new Date(data.updatedAt || Date.now()).toLocaleString()}`;
         } else {
-          valueElement.innerText = "Error fetching value";
+          valueElement.innerText = "No value found for this key";
           valueElement.style.color = "#e74c3c";
+          statusElement.textContent = 'Key exists but has no value';
+          statusElement.style.backgroundColor = '#fff3e0';
+          statusElement.style.color = '#e65100';
         }
-      } catch (error) {
-        console.error('Failed to fetch initial value:', error);
-        valueElement.innerText = "Connection error";
+      })
+      .catch(error => {
+        if (error.message === 'not-found') {
+          valueElement.innerText = "Key not found in database";
+          statusElement.textContent = 'This key does not exist yet. Waiting for creation...';
+        } else {
+          valueElement.innerText = "Connection error";
+          statusElement.textContent = 'Failed to connect to server';
+        }
         valueElement.style.color = "#e74c3c";
-        statusElement.textContent = 'Failed to connect to server';
         statusElement.style.backgroundColor = '#ffebee';
         statusElement.style.color = '#c62828';
-      }
-    }
+      });
     
-    // Update value
-    function updateValue(value, timestamp) {
-      valueElement.innerText = value;
-      valueElement.style.color = "var(--text-color)";
-      valueElement.classList.add('blink');
-      
-      setTimeout(() => {
-        valueElement.classList.remove('blink');
-      }, 1000);
-    }
-    
-    // Socket.IO event handlers
+    // Socket event handlers
     socket.on('connect', () => {
       statusElement.textContent = 'Connected to server! Waiting for updates...';
       statusElement.style.backgroundColor = '#e8f5e9';
       statusElement.style.color = '#2e7d32';
-      
-      // Subscribe to updates for this key
       socket.emit('subscribe', key);
     });
     
@@ -255,19 +214,54 @@
       statusElement.style.color = '#c62828';
     });
     
-    socket.on('valueUpdate', (data) => {
-      if (data.key === key) {
-        updateValue(data.value, new Date());
+    socket.on('subscribed', (data) => {
+      if (data.status === 'success' && data.category) {
+        updateCategory(data.category);
+        currentCategory = data.category;
       }
     });
     
-    // Detect system preference for dark mode
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.body.classList.add('dark-mode');
+    socket.on('valueUpdate', (data) => {
+      if (data.key === key) {
+        updateValue(data.value);
+        statusElement.textContent = `Value updated: ${new Date().toLocaleString()}`;
+        
+        if (data.category) {
+          updateCategory(data.category);
+          if (currentCategory === null) currentCategory = data.category;
+        }
+      }
+    });
+    
+    // Update display functions
+    function updateValue(value) {
+      valueElement.innerText = value;
+      valueElement.style.color = "var(--text-color)";
+      valueElement.classList.add('blink');
+      setTimeout(() => valueElement.classList.remove('blink'), 1000);
     }
     
-    // Start the app
-    fetchInitialValue();
+    function updateCategory(category) {
+      category = category || 'default';
+      categoryBadge.textContent = category;
+      categoryBadge.className = 'category-badge';
+      
+      const predefined = ['default', 'premium', 'system', 'analytics'];
+      if (predefined.includes(category)) {
+        categoryBadge.classList.add(`category-${category}`);
+        return;
+      }
+      
+      // Generate consistent color for custom categories
+      const hash = [...category].reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) >>> 0;
+      const hue = hash % 360;
+      const saturation = 70 + (hash % 30);
+      const lightness = 45 + (hash % 15);
+      const textColor = lightness < 50 ? 'white' : '#333';
+      
+      categoryBadge.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      categoryBadge.style.color = textColor;
+    }
   </script>
 </body>
 </html>

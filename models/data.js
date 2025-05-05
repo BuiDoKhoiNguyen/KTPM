@@ -16,6 +16,11 @@ const Data = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'default'
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -34,6 +39,10 @@ const Data = sequelize.define(
         unique: true,
         fields: ["key"],
       },
+      {
+        name: "data_category_index",
+        fields: ["category"],
+      }
     ],
   }
 )

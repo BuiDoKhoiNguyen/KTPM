@@ -2,18 +2,17 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const { writeData, readData, getAllKeys } = require('../services/dataService');
-const { postLimiter, adminLimiter, getLimiter } = require('../middleware/rateLimiter');
+const { postLimiter, getLimiter } = require('../middleware/rateLimiter');
 
-// Áp dụng rate limit nghiêm ngặt hơn cho API POST (thêm/sửa dữ liệu)
 router.post('/add', async (req, res) => {
   try {
-    const { key, value } = req.body;
+    const { key, value, category } = req.body;
     
     if (!key || value === undefined) {
       return res.status(400).json({ error: 'Key and value are required' });
     }
     
-    await writeData(key, value, null);
+    await writeData(key, value, category);
     res.status(200).json({ success: true, message: 'Value stored successfully' });
   } catch (error) {
     console.error('Error in /add endpoint:', error);
@@ -21,9 +20,9 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Áp dụng rate limit cho API GET
 router.get('/get/:key', async (req, res) => {
   try {
+    console.log('Received GET request for key:', req.params.key);
     const key = req.params.key;
     const result = await readData(key);
     
@@ -57,6 +56,10 @@ router.get('/keys', async (req, res) => {
     console.error('Error in /keys endpoint:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+router.get('/benchmark-report', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/visualize-benchmark.html'));
 });
 
 module.exports = router;

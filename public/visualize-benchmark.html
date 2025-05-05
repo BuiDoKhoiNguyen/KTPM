@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTPM Benchmark Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --text-color: #333;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: var(--primary-color);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .improvement {
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 30px;
+        }
+
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .metrics-table th, .metrics-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .metrics-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .metrics-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .note {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-color: #f0f0f0;
+                --background-color: #121212;
+                --card-bg: #1e1e1e;
+                --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            }
+            
+            h1, h2, h3, .card-header {
+                color: #e1e1e1;
+            }
+            
+            .metrics-table th {
+                background-color: #252525;
+            }
+            
+            .metrics-table tr:hover {
+                background-color: #252525;
+            }
+            
+            .note {
+                background-color: #252525;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KTPM Benchmark Results</h1>
+        
+        <div class="note">
+            <p><strong>Về benchmark này:</strong> So sánh hiệu năng giữa KTPM-base và KTPM-btl, tập trung vào API /get và /add. Benchmark được thực hiện với các yêu cầu đồng thời và đo thời gian phản hồi, throughput, cũng như hiệu suất bộ nhớ đệm.</p>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Cải thiện thời gian phản hồi GET</h3>
+                <div class="stat-value" id="getTimeImprovement">--</div>
+            </div>
+            <div class="stat-card">
+                <h3>Cải thiện throughput GET</h3>
+                <div class="stat-value" id="getThroughputImprovement">--</div>
+            </div>
+            <div class="stat-card">
+                <h3>Cải thiện thời gian phản hồi ADD</h3>
+                <div class="stat-value" id="addTimeImprovement">--</div>
+            </div>
+            <div class="stat-card">
+                <h3>Cải thiện throughput ADD</h3>
+                <div class="stat-value" id="addThroughputImprovement">--</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-header">API GET Performance</h2>
+            <div class="chart-container">
+                <canvas id="getChart"></canvas>
+            </div>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>KTPM-base</th>
+                        <th>KTPM-btl</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody id="getTableBody">
+                    <tr>
+                        <td>Average Response Time</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-header">API ADD Performance</h2>
+            <div class="chart-container">
+                <canvas id="addChart"></canvas>
+            </div>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>KTPM-base</th>
+                        <th>KTPM-btl</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody id="addTableBody">
+                    <tr>
+                        <td>Average Response Time</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-header">Cache Performance</h2>
+            <div class="chart-container">
+                <canvas id="cacheChart"></canvas>
+            </div>
+            <p>Cache mang lại cải thiện đáng kể về thời gian phản hồi. Yêu cầu đầu tiên (cold cache) cần phải truy xuất dữ liệu từ cơ sở dữ liệu, trong khi các yêu cầu tiếp theo (warm cache) có thể lấy dữ liệu trực tiếp từ bộ nhớ đệm Redis.</p>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>First Request (Cold)</th>
+                        <th>Subsequent Requests (Warm)</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody id="cacheTableBody">
+                    <tr>
+                        <td>Response Time</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">Điểm Mạnh Của KTPM-btl</h2>
+            <div id="strengths">
+                <p><strong>1. Bộ nhớ đệm Redis:</strong> Cải thiện đáng kể thời gian phản hồi bằng cách lưu trữ dữ liệu phổ biến trong bộ nhớ.</p>
+                <p><strong>2. Kiến trúc PubSub:</strong> Cho phép cập nhật thời gian thực giữa nhiều phiên bản dịch vụ và client.</p>
+                <p><strong>3. Rate limiting:</strong> Bảo vệ hệ thống khỏi quá tải và các cuộc tấn công tiềm ẩn.</p>
+                <p><strong>4. Retry pattern:</strong> Tăng độ tin cậy bằng cách tự động thử lại các hoạt động thất bại.</p>
+                <p><strong>5. Tổ chức dữ liệu theo danh mục:</strong> Cho phép quản lý dữ liệu hiệu quả hơn.</p>
+                <p><strong>6. Socket.IO:</strong> Cung cấp cập nhật thời gian thực đến người dùng mà không cần polling.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Benchmark thực hiện lúc <span id="timestamp">--</span></p>
+        </div>
+    </div>
+    
+    <script>
+        // Định nghĩa các màu cho biểu đồ
+        const colors = {
+            base: {
+                backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                borderColor: 'rgba(231, 76, 60, 1)',
+            },
+            optimized: {
+                backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                borderColor: 'rgba(46, 204, 113, 1)',
+            },
+            cache: {
+                cold: {
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                },
+                warm: {
+                    backgroundColor: 'rgba(155, 89, 182, 0.2)',
+                    borderColor: 'rgba(155, 89, 182, 1)',
+                }
+            }
+        };
+
+        // Tải dữ liệu benchmark từ file JSON
+        async function loadBenchmarkData() {
+            try {
+                const response = await fetch('/benchmark-results.json');
+                if (!response.ok) {
+                    throw new Error('Không thể tải dữ liệu benchmark');
+                }
+                
+                const data = await response.json();
+                renderBenchmarkResults(data);
+            } catch (error) {
+                console.error('Error loading benchmark data:', error);
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div class="card">
+                            <h2 class="card-header" style="color: #e74c3c;">Lỗi</h2>
+                            <p>Không thể tải dữ liệu benchmark. Vui lòng chạy script benchmark.js trước.</p>
+                            <p>Chạy lệnh sau trong terminal:</p>
+                            <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">node benchmark.js</pre>
+                            <p>Sau đó, làm mới trang này.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Hiển thị kết quả benchmark
+        function renderBenchmarkResults(data) {
+            // Cập nhật thời gian thực hiện
+            document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString();
+            
+            // Cập nhật các thống kê tổng quan
+            document.getElementById('getTimeImprovement').textContent = `${data.comparison.getSpeedImprovement.toFixed(1)}%`;
+            document.getElementById('getThroughputImprovement').textContent = `${data.comparison.getThroughputImprovement.toFixed(1)}%`;
+            document.getElementById('addTimeImprovement').textContent = `${data.comparison.addSpeedImprovement.toFixed(1)}%`;
+            document.getElementById('addThroughputImprovement').textContent = `${data.comparison.addThroughputImprovement.toFixed(1)}%`;
+            
+            // Render bảng GET API
+            renderMetricsTable('getTableBody', [
+                {
+                    name: 'Thời gian phản hồi trung bình',
+                    base: `${data.getRequests.base.avgTime.toFixed(2)} ms`,
+                    optimized: `${data.getRequests.optimized.avgTime.toFixed(2)} ms`,
+                    improvement: `${data.comparison.getSpeedImprovement.toFixed(1)}%`
+                },
+                {
+                    name: 'Requests/second',
+                    base: data.getRequests.base.rps,
+                    optimized: data.getRequests.optimized.rps,
+                    improvement: `${data.comparison.getThroughputImprovement.toFixed(1)}%`
+                },
+                {
+                    name: 'Thời gian phản hồi tối thiểu',
+                    base: `${data.getRequests.base.minTime.toFixed(2)} ms`,
+                    optimized: `${data.getRequests.optimized.minTime.toFixed(2)} ms`,
+                    improvement: `${((data.getRequests.base.minTime - data.getRequests.optimized.minTime) / data.getRequests.base.minTime * 100).toFixed(1)}%`
+                },
+                {
+                    name: 'Thời gian phản hồi tối đa',
+                    base: `${data.getRequests.base.maxTime.toFixed(2)} ms`,
+                    optimized: `${data.getRequests.optimized.maxTime.toFixed(2)} ms`,
+                    improvement: `${((data.getRequests.base.maxTime - data.getRequests.optimized.maxTime) / data.getRequests.base.maxTime * 100).toFixed(1)}%`
+                },
+                {
+                    name: 'Tỷ lệ thành công',
+                    base: `${data.getRequests.base.successRate.toFixed(1)}%`,
+                    optimized: `${data.getRequests.optimized.successRate.toFixed(1)}%`,
+                    improvement: `${(data.getRequests.optimized.successRate - data.getRequests.base.successRate).toFixed(1)}%`
+                }
+            ]);
+            
+            // Render bảng ADD API
+            renderMetricsTable('addTableBody', [
+                {
+                    name: 'Thời gian phản hồi trung bình',
+                    base: `${data.addRequests.base.avgTime.toFixed(2)} ms`,
+                    optimized: `${data.addRequests.optimized.avgTime.toFixed(2)} ms`,
+                    improvement: `${data.comparison.addSpeedImprovement.toFixed(1)}%`
+                },
+                {
+                    name: 'Requests/second',
+                    base: data.addRequests.base.rps,
+                    optimized: data.addRequests.optimized.rps,
+                    improvement: `${data.comparison.addThroughputImprovement.toFixed(1)}%`
+                },
+                {
+                    name: 'Thời gian phản hồi tối thiểu',
+                    base: `${data.addRequests.base.minTime.toFixed(2)} ms`,
+                    optimized: `${data.addRequests.optimized.minTime.toFixed(2)} ms`,
+                    improvement: `${((data.addRequests.base.minTime - data.addRequests.optimized.minTime) / data.addRequests.base.minTime * 100).toFixed(1)}%`
+                },
+                {
+                    name: 'Thời gian phản hồi tối đa',
+                    base: `${data.addRequests.base.maxTime.toFixed(2)} ms`,
+                    optimized: `${data.addRequests.optimized.maxTime.toFixed(2)} ms`,
+                    improvement: `${((data.addRequests.base.maxTime - data.addRequests.optimized.maxTime) / data.addRequests.base.maxTime * 100).toFixed(1)}%`
+                },
+                {
+                    name: 'Tỷ lệ thành công',
+                    base: `${data.addRequests.base.successRate.toFixed(1)}%`,
+                    optimized: `${data.addRequests.optimized.successRate.toFixed(1)}%`,
+                    improvement: `${(data.addRequests.optimized.successRate - data.addRequests.base.successRate).toFixed(1)}%`
+                }
+            ]);
+            
+            // Render bảng cache
+            renderMetricsTable('cacheTableBody', [
+                {
+                    name: 'Thời gian phản hồi',
+                    base: `${data.cachingPerformance.firstRequestTime.toFixed(2)} ms`,
+                    optimized: `${data.cachingPerformance.subsequentAvgTime.toFixed(2)} ms`,
+                    improvement: `${data.cachingPerformance.improvement.toFixed(1)}%`
+                }
+            ]);
+            
+            // Render biểu đồ GET API
+            renderBarChart('getChart', 
+                ['Thời gian phản hồi (ms)', 'Requests/second'],
+                [data.getRequests.base.avgTime, data.getRequests.base.rps],
+                [data.getRequests.optimized.avgTime, data.getRequests.optimized.rps]
+            );
+            
+            // Render biểu đồ ADD API
+            renderBarChart('addChart',
+                ['Thời gian phản hồi (ms)', 'Requests/second'],
+                [data.addRequests.base.avgTime, data.addRequests.base.rps],
+                [data.addRequests.optimized.avgTime, data.addRequests.optimized.rps]
+            );
+            
+            // Render biểu đồ cache
+            renderCacheChart('cacheChart', 
+                data.cachingPerformance.firstRequestTime,
+                data.cachingPerformance.subsequentAvgTime
+            );
+        }
+        
+        // Helper để render bảng chỉ số
+        function renderMetricsTable(tableId, metrics) {
+            const tableBody = document.getElementById(tableId);
+            tableBody.innerHTML = '';
+            
+            metrics.forEach(metric => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${metric.name}</td>
+                    <td>${metric.base}</td>
+                    <td>${metric.optimized}</td>
+                    <td class="improvement">${metric.improvement}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Helper để render biểu đồ cột
+        function renderBarChart(chartId, labels, baseData, optimizedData) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'KTPM-base',
+                            data: baseData,
+                            backgroundColor: colors.base.backgroundColor,
+                            borderColor: colors.base.borderColor,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'KTPM-btl',
+                            data: optimizedData,
+                            backgroundColor: colors.optimized.backgroundColor,
+                            borderColor: colors.optimized.borderColor,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Helper để render biểu đồ hiệu năng cache
+        function renderCacheChart(chartId, coldTime, warmTime) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Thời gian phản hồi (ms)'],
+                    datasets: [
+                        {
+                            label: 'Cold Cache (First Request)',
+                            data: [coldTime],
+                            backgroundColor: colors.cache.cold.backgroundColor,
+                            borderColor: colors.cache.cold.borderColor,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Warm Cache (Subsequent Requests)',
+                            data: [warmTime],
+                            backgroundColor: colors.cache.warm.backgroundColor,
+                            borderColor: colors.cache.warm.borderColor,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Load data when page loads
+        window.addEventListener('DOMContentLoaded', loadBenchmarkData);
+    </script>
+</body>
+</html>

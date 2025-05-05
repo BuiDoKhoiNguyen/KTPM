@@ -16,7 +16,7 @@ const redisConfig = {
 
 const redisPool = {
   _clients: {},
-
+  
   getClient(name = 'default') {
     if (!this._clients[name]) {
       this._clients[name] = new Redis(redisConfig);
@@ -30,7 +30,6 @@ const redisPool = {
     return this._clients[name];
   },
   
-  // Đóng tất cả connections khi cần
   closeAll() {
     Object.values(this._clients).forEach(client => {
       client.quit();
@@ -64,29 +63,8 @@ const cacheUtils = {
       return false;
     }
   },
-
-  async deleteCache(key) {
-    try {
-      return await redisClient.del(key);
-    } catch (error) {
-      console.warn(`Redis DEL error for key ${key}:`, error.message);
-      return 0;
-    }
-  },
-
-  // Kiểm tra kết nối Redis
-  async ping() {
-    try {
-      const result = await redisClient.ping();
-      return result === 'PONG';
-    } catch (error) {
-      console.warn('Redis PING error:', error.message);
-      return false;
-    }
-  }
 };
 
-// PubSub utils với xử lý lỗi tốt hơn và ít logging hơn
 const pubSubUtils = {
   async publish(channel, message) {
     try {
@@ -100,7 +78,6 @@ const pubSubUtils = {
     }
   },
   
-  // Subscribe to a channel
   subscribe(channel, callback) {
     subscriberClient.subscribe(channel, (err) => {
       if (err) {
@@ -109,7 +86,6 @@ const pubSubUtils = {
       }
     });
     
-    // Event listeners cho ioredis - giảm thiểu logging
     subscriberClient.on('message', (receivedChannel, message) => {
       if (receivedChannel === channel) {
         try {
