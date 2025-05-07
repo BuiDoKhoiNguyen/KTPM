@@ -164,6 +164,20 @@ npm run dev
 | `/admin` | GET | Mở bảng điều khiển quản trị | - |
 | `/benchmark-report` | GET | Hiển thị báo cáo benchmark | - |
 
+## Vấn Đề Chương Trình Gốc
+1. **Hiệu năng kém khi tải cao**
+   - HTTP Polling gây quá tải server và lãng phí băng thông
+   - Không sử dụng cache → truy vấn DB lặp lại
+2. **Thiếu khả năng mở rộng**
+   - Thiết kế đơn thể, không hỗ trợ multi-instance
+   - Không dùng Docker hay hệ thống cân bằng tải
+3. **Cập nhật thời gian thực không hiệu quả**
+   - Phụ thuộc polling → độ trễ cao, phản hồi không tức thời
+4. **Khó bảo trì và phát triển**
+   - Không sử dụng ORM → thao tác cơ sở dữ liệu phức tạp, dễ lỗi
+5. **Tổ chức dữ liệu đơn giản, thiếu danh mục**
+   - Tất cả dữ liệu lưu chung, thiếu cấu trúc rõ ràng
+
 ## Benchmark & Đánh Giá Hiệu Năng
 
 ### Add test 1 instance
