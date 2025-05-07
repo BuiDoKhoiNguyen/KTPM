@@ -166,12 +166,12 @@ npm run dev
 
 ## Vấn Đề Chương Trình Gốc - Cải thiện
 
-Chương trình ban đầu tồn tại một số hạn chế liên quan đến các thuộc tính chất lượng phần mềm. Dưới đây là năm vấn đề chính và cách hệ thống hiện tại đã cải thiện:
+Chương trình ban đầu tồn tại một số hạn chế liên quan đến các thuộc tính chất lượng phần mềm. Dưới đây là một số vấn đề chính và giải pháp nhằm cải thiện hạn chế ban đầu:
 
 ### 1. Scalability (Khả năng mở rộng)
 
 -   **Vấn đề:** Hệ thống chỉ chạy một instance đơn, không xử lý hiệu quả khi có nhiều người dùng hoặc tải lớn.
--   **Giải pháp:** Chúng tôi triển khai kiến trúc multi-instance sử dụng **Docker**, **Redis PubSub** và **Nginx** để mở rộng hệ thống theo chiều ngang, đảm bảo khả năng xử lý cao và phân phối tải đều.
+-   **Giải pháp:** Chúng em triển khai kiến trúc multi-instance sử dụng **Docker**, **Redis PubSub** và **Nginx** để mở rộng hệ thống theo chiều ngang, đảm bảo khả năng xử lý cao và phân phối tải đều.
 
 ### 2. Performance (Hiệu năng)
 
