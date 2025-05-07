@@ -164,19 +164,34 @@ npm run dev
 | `/admin` | GET | Mở bảng điều khiển quản trị | - |
 | `/benchmark-report` | GET | Hiển thị báo cáo benchmark | - |
 
-## Vấn Đề Chương Trình Gốc
-1. **Hiệu năng kém khi tải cao**
-   - HTTP Polling gây quá tải server và lãng phí băng thông
-   - Không sử dụng cache → truy vấn DB lặp lại
-3. **Thiếu khả năng mở rộng**
-   - Thiết kế đơn thể, không hỗ trợ multi-instance
-   - Không dùng Docker hay hệ thống cân bằng tải
-4. **Cập nhật thời gian thực không hiệu quả**
-   - Phụ thuộc polling → độ trễ cao, phản hồi không tức thời
-5. **Khó bảo trì và phát triển**
-   - Không sử dụng ORM → thao tác cơ sở dữ liệu phức tạp, dễ lỗi
-6. **Tổ chức dữ liệu đơn giản, thiếu danh mục**
-   - Tất cả dữ liệu lưu chung, thiếu cấu trúc rõ ràng
+## Vấn Đề Chương Trình Gốc - Cải thiện
+
+Chương trình ban đầu tồn tại một số hạn chế liên quan đến các thuộc tính chất lượng phần mềm. Dưới đây là năm vấn đề chính và cách hệ thống hiện tại đã cải thiện:
+
+### 1. Scalability (Khả năng mở rộng)
+
+-   **Vấn đề:** Hệ thống chỉ chạy một instance đơn, không xử lý hiệu quả khi có nhiều người dùng hoặc tải lớn.
+-   **Giải pháp:** Chúng tôi triển khai kiến trúc multi-instance sử dụng **Docker**, **Redis PubSub** và **Nginx** để mở rộng hệ thống theo chiều ngang, đảm bảo khả năng xử lý cao và phân phối tải đều.
+
+### 2. Performance (Hiệu năng)
+
+-   **Vấn đề:** Truy cập trực tiếp vào cơ sở dữ liệu làm giảm tốc độ phản hồi và gây nghẽn khi dữ liệu lớn.
+-   **Giải pháp:** Áp dụng mô hình **cache-aside** với **Redis**, giúp giảm độ trễ đọc xuống còn ~0.23ms (so với ~1.42ms ban đầu), đồng thời giảm áp lực lên PostgreSQL.
+
+### 3. Reliability (Độ tin cậy)
+
+-   **Vấn đề:** Hệ thống dễ bị ảnh hưởng khi một service gặp lỗi, không có cơ chế tự phục hồi.
+-   **Giải pháp:** Thiết kế lại để hỗ trợ nhiều instance độc lập và bổ sung **retry pattern** với **exponential backoff**, giúp hệ thống bền vững và chịu lỗi tốt hơn.
+
+### 4. Maintainability (Dễ bảo trì)
+
+-   **Vấn đề:** Mã nguồn ban đầu không tổ chức rõ ràng, khó bảo trì và mở rộng.
+-   **Giải pháp:** Tái cấu trúc mã theo mô hình module, sử dụng **Sequelize ORM**, cấu hình tách riêng bằng `.env`, giúp dễ theo dõi và mở rộng tính năng.
+
+### 5. Usability / User Experience (Trải nghiệm người dùng)
+
+-   **Vấn đề:** Không có giao diện theo dõi dữ liệu thời gian thực, trải nghiệm người dùng hạn chế.
+-   **Giải pháp:** Xây dựng bảng điều khiển trực quan và **trình xem giá trị thời gian thực** bằng **Socket.IO**, giúp người dùng giám sát dữ liệu một cách tương tác và hiệu quả.
 
 ## Benchmark & Đánh Giá Hiệu Năng
 
