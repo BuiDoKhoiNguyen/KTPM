@@ -166,23 +166,24 @@ npm run dev
 
 ## Benchmark & Đánh Giá Hiệu Năng
 
-### Add test
+### Add test 1 instance
 ![add api](./assets/Add%20perform%20mance.png)
 
-### Get test
+### Get test 1 instance
 ![get api](./assets/Get%20performance.png)
 
-### Độ trễ
+### Độ trễ 1 instance
 ![latency](./assets/Latency.png)
 
-### Add test multi instance
+### Add test 3 instance docker
 ![add api](./assets/Add%20performance%20multiintance.png)
 
-### Get test multi instance
+### Get test 3 instance docker
 ![get api](./assets/Get%20performance%20multiintance.png)
 
-### Độ trễ multi instance
+### Độ trễ 3 instance docker
 ![latency](./assets/Lantency%20multiinstance.png)
+
 ### Kịch Bản Benchmark
 
 1. **So sánh API GET/ADD**
@@ -201,17 +202,6 @@ npm run dev
    - So sánh độ trễ giữa cập nhật thời gian thực (Socket.IO) và HTTP Polling truyền thống
    - Đánh giá hiệu quả băng thông và tỉ lệ phát hiện cập nhật
    - Test với 50 clients đồng thời trong 60 giây
-
-### Kết Quả Benchmark
-
-
-| Chỉ số | KTPM-base | KTPM-btl | Cải thiện |
-|--------|-----------|----------|-----------|
-| GET API (avg time) | 41.52ms | 37.30ms | +10.16% |
-| GET API (req/sec) | 5,031 | 5,586 | +11.03% |
-| ADD API (avg time) | 98.17ms | 89.84ms | +8.48% |
-| ADD API (req/sec) | 2,045 | 2,306 | +12.76% |
-| Cache Hit vs Miss | none | 83.57% | Cải thiện đáng kể |
 
 #### Hiệu Năng Cache:
 - **Yêu cầu đầu tiên (cold cache)**: 1.42ms
