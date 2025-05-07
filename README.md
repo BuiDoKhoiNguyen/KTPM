@@ -22,7 +22,7 @@ KTPM-BTL là một kho lưu trữ key-value hiệu năng cao với kiến trúc 
 
 - **REST API**: Các endpoint đơn giản cho việc quản lý dữ liệu
 - **Cập nhật thời gian thực**: Kiến trúc theo hướng đẩy sử dụng Socket.IO
-- **Bảng điều khiển quản trị**: Giao diện trực quan cho việc quản lý dữ liệu
+- **Bảng điều khiển quản trị**: Giao diện(UI) trực quan cho việc quản lý dữ liệu
 - **Trình xem thời gian thực**: Hiển thị tương tác để theo dõi giá trị trực tiếp
 - **Hệ thống danh mục**: Tổ chức dữ liệu với các danh mục có thể tùy chỉnh
 - **Hỗ trợ nhiều phiên bản**: Mở rộng theo chiều ngang với cân bằng tải
