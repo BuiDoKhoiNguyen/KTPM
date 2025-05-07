@@ -22,7 +22,6 @@ router.post('/add', async (req, res) => {
 
 router.get('/get/:key', async (req, res) => {
   try {
-    console.log('Received GET request for key:', req.params.key);
     const key = req.params.key;
     const result = await readData(key);
     
@@ -60,6 +59,10 @@ router.get('/keys', async (req, res) => {
 
 router.get('/benchmark-report', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/visualize-benchmark.html'));
+});
+
+router.get('/socket-vs-polling', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/socket-vs-polling-visualize.html'));
 });
 
 module.exports = router;

@@ -2,6 +2,13 @@
 
 Một hệ thống lưu trữ và phân phối cặp key-value thời gian thực có khả năng mở rộng được thiết kế cho dữ liệu cập nhật liên tục như giá tiền điện tử, báo giá chứng khoán và thông tin tài chính.
 
+## Các thành viên của nhóm gồm có
+```
+Bùi Đỗ Khôi Nguyên - 22021183
+Diệp Xuân Linh - 22021193
+Vũ Văn Huy - 22021202
+```
+
 ## Tổng Quan
 
 KTPM-BTL là một kho lưu trữ key-value hiệu năng cao với kiến trúc microservices hiện đại cung cấp:
@@ -84,7 +91,7 @@ KTPM-BTL sử dụng Redis PubSub để phân phối cập nhật dữ liệu gi
 4. Các instances đăng ký nhận thông điệp và cập nhật cho clients thông qua Socket.IO
 5. Clients theo dõi giá Bitcoin thấy giá được cập nhật ngay lập tức
 
-## 🧩 Các Mẫu Thiết Kế
+## Các Mẫu Thiết Kế
 
 ### 1. Publisher/Subscriber
 - Sử dụng Redis PubSub để phân phối tin nhắn
@@ -164,18 +171,14 @@ npm run dev
 
 ## Benchmark & Đánh Giá Hiệu Năng
 
-### Chạy Benchmark
+### Add test
+![add api](./assets/Add%20perform%20mance.png)
 
-Benchmark giữa KTPM-base và KTPM-btl để so sánh hiệu năng:
+### Get test
+![get api](./assets/Get%20performance.png)
 
-```bash
-# Chạy đầy đủ benchmark suite
-node benchmark.js
-
-# Xem kết quả trực quan
-open http://localhost:8080/benchmark-report
-```
-
+### Độ trễ
+![latency](./assets/Latency.png)
 ### Kịch Bản Benchmark
 
 1. **So sánh API GET/ADD**
@@ -189,6 +192,11 @@ open http://localhost:8080/benchmark-report
 3. **Khả Năng Chịu Tải**
    - Test với nhiều requests đồng thời
    - So sánh single-instance và multi-instance deployment
+
+4. **So sánh Socket.IO vs HTTP Polling**
+   - So sánh độ trễ giữa cập nhật thời gian thực (Socket.IO) và HTTP Polling truyền thống
+   - Đánh giá hiệu quả băng thông và tỉ lệ phát hiện cập nhật
+   - Test với 50 clients đồng thời trong 60 giây
 
 ### Kết Quả Benchmark
 
@@ -207,8 +215,11 @@ Kết quả benchmark thu thập ngày 5 tháng 5 năm 2025:
 - **Yêu cầu tiếp theo (warm cache)**: 0.23ms
 - **Cải thiện từ cache**: 83.57%
 
-
-
+#### Hiệu năng socket
+   - Socket.IO có độ trễ trung bình thấp hơn 47.18% so với HTTP Polling (2.31ms vs 4.38ms)
+   - Socket.IO chỉ cần 5,950 tin nhắn để xử lý cùng số lượng cập nhật mà HTTP Polling cần đến 29,500 requests
+   - Cả hai phương pháp đều có độ tin cậy cao với tỉ lệ lỗi 0%
+   - HTTP Polling cần trung bình 5 requests để phát hiện 1 cập nhật
 
 
 
