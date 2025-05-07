@@ -13,7 +13,7 @@ const os = require('os');
 // Cấu hình benchmark
 const CONFIG = {
   serverUrls: {
-    btl: 'http://localhost:8080', // KTPM-btl (Socket.IO)
+    btl: 'http://localhost:80', // KTPM-btl (Socket.IO)
     base: 'http://localhost:8888', // KTPM-base (HTTP Polling)
   },
   testDuration: 60, // Thời gian chạy test (giây)

@@ -108,11 +108,6 @@ KTPM-BTL sử dụng Redis PubSub để phân phối cập nhật dữ liệu gi
 - Triển khai exponential backoff cho các nỗ lực kết nối lại
 - Giảm dần hiệu suất một cách nhẹ nhàng khi các dịch vụ không khả dụng
 
-### 4. Rate Limiting
-- Bảo vệ API khỏi lạm dụng và tấn công DoS
-- Giới hạn riêng cho các hoạt động đọc và ghi
-- Theo dõi tần suất yêu cầu dựa trên IP
-
 ## Cài Đặt & Thiết Lập
 
 ### 1. Clone repository
@@ -179,10 +174,19 @@ npm run dev
 
 ### Độ trễ
 ![latency](./assets/Latency.png)
+
+### Add test multi instance
+![add api](./assets/Add%20performance%20multiintance.png)
+
+### Get test multi instance
+![get api](./assets/Get%20performance%20multiintance.png)
+
+### Độ trễ multi instance
+![latency](./assets/Lantency%20multiinstance.png)
 ### Kịch Bản Benchmark
 
 1. **So sánh API GET/ADD**
-   - Đo thời gian phản hồi và throughput cho cả hai phiên bản từ 200-1000 connections
+   - Đo thời gian phản hồi và throughput cho cả hai phiên bản từ 200 connections
    - So sánh tỷ lệ thành công và độ ổn định
 
 2. **Hiệu Năng Cache**
@@ -200,7 +204,6 @@ npm run dev
 
 ### Kết Quả Benchmark
 
-Kết quả benchmark thu thập ngày 5 tháng 5 năm 2025:
 
 | Chỉ số | KTPM-base | KTPM-btl | Cải thiện |
 |--------|-----------|----------|-----------|

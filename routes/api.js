@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const { writeData, readData, getAllKeys } = require('../services/dataService');
-const { postLimiter, getLimiter } = require('../middleware/rateLimiter');
 
 router.post('/add', async (req, res) => {
   try {

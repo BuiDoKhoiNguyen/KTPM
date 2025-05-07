@@ -5,7 +5,7 @@ const path = require('path');
 // Cấu hình benchmark
 const CONFIG = {
   baseUrl: 'http://localhost:8888', // KTPM-base
-  optimizedUrl: 'http://localhost:8080', // KTPM-btl
+  optimizedUrl: 'http://localhost:80', // KTPM-btl
   concurrentRequests: 200, // Số lượng request đồng thời
   iterations: 5, // Số lần chạy để lấy trung bình
   testKeys: ['test1', 'test2', 'test3', 'test4', 'test5'],
